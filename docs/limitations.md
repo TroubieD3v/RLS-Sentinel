@@ -46,5 +46,5 @@ estimate how many real-world RLS defects the tool finds or misses. See [benchmar
 - The automated accessibility audit (axe-core) found and fixed issues, but no manual screen-reader review was performed.
 - The Docker Compose deployment was started and exercised with a fixture run on Docker Desktop (Windows); other
   platforms were not tried.
-- The release workflow, code-scanning workflow and example GitHub Action have not been executed on GitHub by the author
-  of this repository at the time of writing; they were checked for syntax only.
+- The CI workflow (PostgreSQL 15–18, Playwright, Compose smoke test, wheel build) and the code-scanning workflow run
+  green on GitHub. The release workflow and the example GitHub Action have not been executed yet.
