@@ -66,3 +66,12 @@ They are taken from a real run of the bundled fixture; do not replace them with 
 - Fixtures contain synthetic data only; expectations are derived from requirements, not from tool output.
 - Schema changes to the metadata store need an Alembic revision (`persistence/migrations/versions`) and the drift test
   `tests/unit/test_migrations.py` must pass.
+
+## Publishing a release
+
+1. Update the version in `backend/pyproject.toml` and `backend/rls_sentinel/__init__.py`, and add a `CHANGELOG.md` entry.
+2. Tag and push: `git tag -a vX.Y.Z -m "RLS Sentinel X.Y.Z" && git push origin vX.Y.Z`. The Release workflow checks that the
+   tag matches the package version, builds the wheel and sdist with the bundled UI, writes CycloneDX SBOMs and
+   `SHA256SUMS`, attests build provenance, and stores everything as the `release-vX.Y.Z` workflow artifact.
+3. When it has succeeded, run `scripts/publish_release.sh vX.Y.Z`. It downloads the artifact, verifies checksums and
+   attestations, and creates the GitHub release with your own `gh` login, so the release is authored by the maintainer.
