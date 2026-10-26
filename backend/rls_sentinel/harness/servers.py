@@ -23,6 +23,7 @@ import secrets
 import shutil
 import socket
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -46,7 +47,7 @@ _LIVE_LOCK = threading.Lock()
 def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
-    if os.name == "nt":
+    if sys.platform == "win32":
         import ctypes
 
         k32 = ctypes.windll.kernel32
@@ -208,7 +209,7 @@ class LocalClusterServer(DisposableServer):
             args += ["-c", f"unix_socket_directories={self.root}"]
         logf = open(self.root / "postgres.log", "wb")  # noqa: SIM115 - handed to Popen
         kwargs: dict = {}
-        if os.name == "nt":
+        if sys.platform == "win32":
             kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
         self._proc = subprocess.Popen(  # noqa: S603
             args, stdout=logf, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, **kwargs)

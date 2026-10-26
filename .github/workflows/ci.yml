@@ -35,8 +35,10 @@ jobs:
       - name: Ensure PostgreSQL server binaries (a few tests start a local cluster)
         run: ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || sudo apt-get install -y --no-install-recommends postgresql
       - run: pip install -e "backend[dev]"
-      - run: ruff check backend/rls_sentinel backend/tests
-      - run: mypy backend/rls_sentinel
+      - run: ruff check rls_sentinel tests
+        working-directory: backend
+      - run: mypy rls_sentinel
+        working-directory: backend
       - run: pytest -q
         working-directory: backend
       - name: Fixture benchmark against documented outcomes
