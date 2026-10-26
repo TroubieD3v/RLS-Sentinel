@@ -2,6 +2,19 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `scripts/scale_benchmark.py`: phase-by-phase timing on generated schemas with planted violations; results for
+  1 000 tables / 10 000 policies / 4 000 cases in `docs/benchmarks.md`.
+- README demo GIF and screenshot gallery recorded from a real run (`frontend/e2e/demo.spec.ts`, `scripts/make_gif.py`).
+
+### Fixed
+- Catalog listings stopped at 5 000 policies (and other fixed limits) while the run still looked complete. Limits are
+  higher, and reaching one now adds a coverage note to the report.
+- Quadratic table and grant lookups in the rule engine (4.2 s to 0.3 s at 1 000 tables) and in migration line numbering
+  (3.0 s to 0.5 s); cheaper secret redaction when storing large results.
+
 ## [1.0.0] - 2026-10-26
 
 First release.

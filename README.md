@@ -9,7 +9,19 @@ with evidence. Anything it cannot prove is reported as `INCONCLUSIVE` or `UNSUPP
 
 > **Permissions are not proof. Test them.**
 
-![Overview of a run against the bundled multi-tenant fixture](docs/assets/overview-dark.png)
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="25-second demo: run the vulnerable fixture, see 8 confirmed violations, open the evidence for one matrix cell and its finding, the access graph, a what-if fix that resolves two cases without regressions, and the secure variant with zero violations" width="100%">
+  <br><sub>A real run of the bundled synthetic fixture, recorded from the UI (25 s, no cuts in the data).</sub>
+</p>
+
+| | |
+|---|---|
+| ![Command center after a run](docs/assets/overview-dark.png) | ![Authorization matrix with the evidence for one cell](docs/assets/matrix-evidence-dark.png) |
+| **Command center**: real counts and verified coverage | **Matrix**: every cell is an executed test; the evidence names the deciding gate |
+| ![Finding with steps to reproduce](docs/assets/finding-dark.png) | ![What-if Policy Lab results](docs/assets/whatif-results-dark.png) |
+| **Finding**: expected vs observed, why it matters, reproduction | **What-if**: a draft fix replayed in a clone, diffed case by case |
+| ![Access graph](docs/assets/graph-dark.png) | ![Light theme](docs/assets/overview-light.png) |
+| **Access graph**: roles, policies, tables, with provenance | **Light theme** with WCAG AA contrast |
 
 ## What it does
 
@@ -23,7 +35,6 @@ with evidence. Anything it cannot prove is reported as `INCONCLUSIVE` or `UNSUPP
 | **Reports** | JSON, Markdown, HTML, CSV and **SARIF 2.1.0** (validated against the official schema), plus a generated pytest regression suite. |
 | **Drift** | Compare two snapshots or runs; policy-level semantic diff with risk direction. |
 
-![Authorization matrix with evidence](docs/assets/matrix-evidence-dark.png)
 
 ## Quick start
 
@@ -70,7 +81,8 @@ as a negative control (it must produce zero confirmed violations).
 | `external-benchmark` | the `passwd` example from the PostgreSQL documentation, expectations taken from the docs |
 
 Measured agreement with the documented expectations on PostgreSQL 15, 16, 17 and 18 is in
-[docs/benchmarks.md](docs/benchmarks.md). It is a consistency check on small synthetic schemas, **not** a detection rate.
+[docs/benchmarks.md](docs/benchmarks.md), together with a scale test: a generated schema of 1 000 tables, 10 000 policies
+and 4 000 behavioural cases runs end to end in about 27 s on one machine and finds exactly the 65 planted violations. It is a consistency check on small synthetic schemas, **not** a detection rate.
 
 ## Using it on your own schema
 
