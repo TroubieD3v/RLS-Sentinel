@@ -1,0 +1,217 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "RLS Sentinel",
+          "version": "1.0.0",
+          "semanticVersion": "1.0.0",
+          "rules": [
+            {
+              "id": "RLS-020",
+              "name": "UncoveredTenantTableOperation",
+              "shortDescription": {
+                "text": "Uncovered tenant table / operation"
+              },
+              "fullDescription": {
+                "text": "A protected table or SQL operation has no expectation in the spec, so its boundary is unverified. This is coverage tracking, not a vulnerability by itself."
+              },
+              "help": {
+                "text": "Add ALLOW/DENY expectations for the missing actor/operation combinations.\nMinimum evidence: Coverage tracking, not vulnerability by itself",
+                "markdown": "**Remediation:** Add ALLOW/DENY expectations for the missing actor/operation combinations.\n\n**Minimum evidence:** Coverage tracking, not vulnerability by itself"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "coverage"
+                ],
+                "precision": "medium"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+            }
+          ],
+          "properties": {
+            "ruleset": "2026.10.1"
+          }
+        }
+      },
+      "results": [
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 0,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT on public.comments. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.comments",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:d905599fd68ee5431d2dd41f"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 0,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers UPDATE on public.documents. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.documents",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:0199e2011be0299897b51edd"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 0,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT, UPDATE, DELETE on public.memberships. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.memberships",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:322875c5366d4428968d0001"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 0,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT, DELETE on public.projects. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.projects",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:ae487c7e6dce4f639ac1f9f9"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "properties": {
+            "coverage": 100.0,
+            "postgres": "18.3"
+          }
+        }
+      ],
+      "automationDetails": {
+        "id": "rls-sentinel/bb8f154f8317"
+      },
+      "properties": {
+        "environment": "DISPOSABLE LAB",
+        "sourceRowDataCollected": false
+      }
+    }
+  ]
+}

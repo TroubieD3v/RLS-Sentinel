@@ -1,0 +1,21 @@
+name: saas-auth-context
+title: Supabase-style authentication context (SYNTHETIC)
+description: >
+  Supabase-style roles (anon / authenticated / service_role), auth.uid() / auth.jwt() helpers and claim-based
+  policies. Identity is injected with set_config() inside a disposable database, so results exercise policy LOGIC
+  only; they are never evidence that an application authenticates users or that clients cannot forge the settings.
+  The vulnerable variant lets a missing subject claim open access and trusts a client-settable custom setting.
+tags: [supabase, jwt-claims, synthetic-identity]
+min_pg_major: 15
+roles: [sb_owner, anon, authenticated, service_role]
+variants:
+  vulnerable: [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_vulnerable.sql, sql/30_seed.sql]
+  secure:     [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_secure.sql,     sql/30_seed.sql]
+spec: specs/sentinel.yaml
+expected_outcomes:
+  vulnerable:
+    fail:
+      - no-subject-cannot-read-todo
+      - bob-forging-app-setting-cannot-read-alpha-legacy-note
+  secure:
+    fail: []

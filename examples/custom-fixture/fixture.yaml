@@ -1,0 +1,19 @@
+name: custom-notes-example
+title: Example - bring your own schema (personal notes)
+description: >
+  A minimal template for testing your own policies. Each user may read and change only their own notes.
+  Replace the SQL files with your schema and policies, keep the data synthetic, and write the spec from your
+  requirements rather than from the policy text. The "secure" variant is the version you believe is correct; "vulnerable" is a deliberately broken copy that proves
+  the spec can actually detect the defect (a negative control).
+tags: [example, template]
+min_pg_major: 15
+roles: [ex_owner, ex_alice, ex_bob]
+variants:
+  vulnerable: [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_vulnerable.sql, sql/30_seed.sql]
+  secure:     [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_secure.sql,     sql/30_seed.sql]
+expected_outcomes:
+  vulnerable:
+    fail: [alice-cannot-insert-note-for-bob]
+  secure:
+    fail: []
+spec: specs/sentinel.yaml

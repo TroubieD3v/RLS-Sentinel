@@ -1,0 +1,154 @@
+# Expected authorization policy for Fixture A. This file is authored independently of the policies in
+# sql/20_policies_*.sql: it states what SHOULD be allowed/denied, not what the database currently does.
+version: 1
+project: acme-saas
+source:
+  type: fixture
+  name: multi-tenant-saas
+identity_mode: postgres_roles
+
+tenants:
+  - {id: alpha, value: "11111111-1111-1111-1111-111111111111", name: Alpha Synthetic Co}
+  - {id: beta,  value: "22222222-2222-2222-2222-222222222222", name: Beta Synthetic Co}
+
+actors:
+  - {id: alice,   pg_role: app_alice,   tenant: alpha, description: "Alpha admin"}
+  - {id: charlie, pg_role: app_charlie, tenant: alpha, description: "Alpha member (colleague of alice)"}
+  - {id: bob,     pg_role: app_bob,     tenant: beta,  description: "Beta admin"}
+  - {id: support, pg_role: app_support, tenant: null,  kind: support, description: "Read-only cross-tenant support"}
+  - {id: anon,    pg_role: app_anon,    tenant: null,  kind: anonymous, description: "Anonymous visitor"}
+
+resources:
+  - {id: alpha_invoice,   table: public.invoices,    pk: {id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}, tenant: alpha}
+  - {id: alpha_invoice_2, table: public.invoices,    pk: {id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaab"}, tenant: alpha}
+  - {id: beta_invoice,    table: public.invoices,    pk: {id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}, tenant: beta}
+  - {id: alpha_project,   table: public.projects,    pk: {id: "a0000000-0000-0000-0000-0000000000a1"}, tenant: alpha}
+  - {id: beta_project,    table: public.projects,    pk: {id: "b0000000-0000-0000-0000-0000000000b1"}, tenant: beta}
+  - {id: alpha_comment,   table: public.comments,    pk: {id: "ca000000-0000-0000-0000-000000000001"}, tenant: alpha}
+  - {id: beta_comment,    table: public.comments,    pk: {id: "cb000000-0000-0000-0000-000000000001"}, tenant: beta}
+  - {id: alpha_doc,       table: public.documents,   pk: {id: "da000000-0000-0000-0000-000000000001"}, tenant: alpha}
+  - {id: beta_doc,        table: public.documents,   pk: {id: "db000000-0000-0000-0000-000000000001"}, tenant: beta}
+  - {id: alice_membership, table: public.memberships, pk: {id: "0a000000-0000-0000-0000-000000000001"}, tenant: alpha}
+
+tables:
+  - table: public.invoices
+    tenant_column: org_id
+    touch_column: status
+    sensitive_columns:
+      - {column: internal_note, allowed_roles: [support_reader, app_support]}
+  - {table: public.projects,    tenant_column: org_id, touch_column: name}
+  - {table: public.comments,    tenant_column: org_id, touch_column: body}
+  - {table: public.documents,   tenant_column: org_id, touch_column: title}
+  - {table: public.memberships, tenant_column: org_id, touch_column: role}
+
+expectations:
+  # ------------------------------------------------------------------ invoices: reads
+  - {id: alice-reads-own-invoice,          actor: alice,   operation: SELECT, resource: alpha_invoice, expected: ALLOW}
+  - {id: charlie-reads-colleague-invoice,  actor: charlie, operation: SELECT, resource: alpha_invoice, expected: ALLOW}
+  - {id: bob-reads-own-invoice,            actor: bob,     operation: SELECT, resource: beta_invoice,  expected: ALLOW}
+  - {id: bob-cannot-read-alpha-invoice,    actor: bob,     operation: SELECT, resource: alpha_invoice, expected: DENY, rule: RLS-006}
+  - {id: alice-cannot-read-beta-invoice,   actor: alice,   operation: SELECT, resource: beta_invoice,  expected: DENY, rule: RLS-006}
+  # ------------------------------------------------------------------ invoices: writes
+  - {id: alice-updates-own-invoice,        actor: alice, operation: UPDATE, resource: alpha_invoice,   expected: ALLOW}
+  - {id: bob-cannot-update-alpha-invoice,  actor: bob,   operation: UPDATE, resource: alpha_invoice,   expected: DENY, rule: RLS-007}
+  - {id: alice-deletes-own-invoice,        actor: alice, operation: DELETE, resource: alpha_invoice_2, expected: ALLOW}
+  - {id: bob-cannot-delete-alpha-invoice,  actor: bob,   operation: DELETE, resource: alpha_invoice,   expected: DENY, rule: RLS-007}
+  - id: bob-inserts-invoice-into-beta
+    actor: bob
+    operation: INSERT
+    table: public.invoices
+    as_tenant: beta
+    row: {id: $uuid, number: B-NEW, amount_cents: 100}
+    expected: ALLOW
+  - id: bob-cannot-insert-invoice-into-alpha
+    description: INSERT with another tenant's org_id must be rejected by the policy WITH CHECK.
+    actor: bob
+    operation: INSERT
+    table: public.invoices
+    as_tenant: alpha
+    row: {id: $uuid, number: B-EVIL, amount_cents: 100}
+    expected: DENY
+    rule: RLS-005
+  - id: bob-cannot-move-own-invoice-to-alpha
+    description: >
+      Changing the tenant column on one's own row must be rejected by the NEW-row check. In the vulnerable variant
+      invoices_update has WITH CHECK (true) but the tenant-scoped SELECT policy still rejects the new row, so this
+      case PASSES there: a static risk that is not runtime-confirmed.
+    actor: bob
+    operation: UPDATE
+    resource: beta_invoice
+    set_tenant: alpha
+    expected: DENY
+    rule: RLS-005
+  - id: bob-cannot-move-own-project-to-alpha
+    description: Same new-row test on projects, where nothing masks a permissive WITH CHECK.
+    actor: bob
+    operation: UPDATE
+    resource: beta_project
+    set_tenant: alpha
+    expected: DENY
+    rule: RLS-005
+  - id: alice-upserts-own-invoice
+    actor: alice
+    operation: UPSERT
+    resource: alpha_invoice
+    expected: ALLOW
+  - id: bob-cannot-upsert-over-alpha-invoice
+    actor: bob
+    operation: UPSERT
+    resource: alpha_invoice
+    expected: DENY
+    rule: RLS-007
+  # ------------------------------------------------------------------ invoices: column level + roles
+  - {id: alice-reads-amount-column,        actor: alice, operation: SELECT, resource: alpha_invoice, columns: [amount_cents],  expected: ALLOW}
+  - {id: alice-cannot-read-internal-note,  actor: alice, operation: SELECT, resource: alpha_invoice, columns: [internal_note], expected: DENY, deny_gate: grant, rule: RLS-016}
+  - {id: support-reads-beta-invoice,       actor: support, operation: SELECT, resource: beta_invoice, expected: ALLOW}
+  - {id: support-reads-internal-note,      actor: support, operation: SELECT, resource: beta_invoice, columns: [internal_note], expected: ALLOW}
+  - {id: support-cannot-delete-beta-invoice, actor: support, operation: DELETE, resource: beta_invoice,  expected: DENY, deny_gate: grant}
+  - {id: support-cannot-update-alpha-invoice, actor: support, operation: UPDATE, resource: alpha_invoice, expected: DENY, deny_gate: grant}
+  - {id: anon-cannot-read-invoice,         actor: anon, operation: SELECT, resource: alpha_invoice, expected: DENY, deny_gate: grant, rule: RLS-015}
+  # ------------------------------------------------------------------ views and functions
+  - {id: alice-reads-invoice-via-owner-view,   actor: alice, operation: SELECT, resource: alpha_invoice, via: public.v_invoices_owner,   expected: ALLOW}
+  - {id: bob-cannot-read-alpha-invoice-via-owner-view, actor: bob, operation: SELECT, resource: alpha_invoice, via: public.v_invoices_owner, expected: DENY, rule: RLS-008}
+  - {id: alice-reads-invoice-via-invoker-view, actor: alice, operation: SELECT, resource: alpha_invoice, via: public.v_invoices_invoker, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-invoice-via-invoker-view, actor: bob, operation: SELECT, resource: alpha_invoice, via: public.v_invoices_invoker, expected: DENY, rule: RLS-008}
+  - {id: alice-reads-invoice-via-function, actor: alice, operation: EXECUTE, resource: alpha_invoice, function: public.get_invoice, args: ["$pk:alpha_invoice.id"], expected: ALLOW}
+  - {id: bob-cannot-read-alpha-invoice-via-function, actor: bob, operation: EXECUTE, resource: alpha_invoice, function: public.get_invoice, args: ["$pk:alpha_invoice.id"], expected: DENY, rule: RLS-009}
+  # ------------------------------------------------------------------ comments
+  - {id: alice-reads-own-comment,          actor: alice, operation: SELECT, resource: alpha_comment, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-comment,    actor: bob,   operation: SELECT, resource: alpha_comment, expected: DENY, rule: RLS-006}
+  - {id: bob-cannot-update-alpha-comment,  actor: bob,   operation: UPDATE, resource: alpha_comment, expected: DENY, rule: RLS-007}
+  - {id: bob-cannot-delete-alpha-comment,  actor: bob,   operation: DELETE, resource: alpha_comment, expected: DENY, rule: RLS-017}
+  # ------------------------------------------------------------------ projects (public catalog rows)
+  - {id: alice-reads-alpha-project,        actor: alice, operation: SELECT, resource: alpha_project, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-project,    actor: bob,   operation: SELECT, resource: alpha_project, expected: DENY}
+  - {id: anon-reads-public-project,        actor: anon,  operation: SELECT, resource: beta_project,  expected: ALLOW}
+  - {id: anon-cannot-read-private-project, actor: anon,  operation: SELECT, resource: alpha_project, expected: DENY, rule: RLS-015}
+  # ------------------------------------------------------------------ documents (read-only for members)
+  - {id: alice-reads-own-document,         actor: alice, operation: SELECT, resource: alpha_doc, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-document,   actor: bob,   operation: SELECT, resource: alpha_doc, expected: DENY}
+  - {id: alice-cannot-delete-own-document, description: "Members have no DELETE policy: RLS-enabled with no applicable policy denies by default.", actor: alice, operation: DELETE, resource: alpha_doc, expected: DENY}
+  - id: alice-cannot-insert-document
+    description: No INSERT policy exists, so the write is denied by default.
+    actor: alice
+    operation: INSERT
+    table: public.documents
+    as_tenant: alpha
+    row: {id: $uuid, title: new, classification: internal}
+    expected: DENY
+  # ------------------------------------------------------------------ memberships
+  - {id: alice-reads-own-membership,       actor: alice, operation: SELECT, resource: alice_membership, expected: ALLOW}
+  - {id: bob-cannot-read-alice-membership, actor: bob,   operation: SELECT, resource: alice_membership, expected: DENY}
+
+privileges:
+  - {id: members-cannot-truncate-comments, role: app_user, table: public.comments, deny: [TRUNCATE, REFERENCES, TRIGGER]}
+  - {id: members-use-invoices,             role: app_user, table: public.invoices, allow: [SELECT, INSERT, UPDATE, DELETE], deny: [TRUNCATE]}
+  - {id: anon-has-no-invoice-access,       role: app_anon, table: public.invoices, deny: [SELECT, INSERT, UPDATE, DELETE, TRUNCATE]}
+  - {id: support-is-read-only,             role: support_reader, table: public.invoices, allow: [SELECT], deny: [INSERT, UPDATE, DELETE, TRUNCATE]}
+
+execution:
+  environment: disposable
+  max_statements: 200
+  statement_timeout_ms: 2000
+  parallelism: 2
+  allow_mutations: true

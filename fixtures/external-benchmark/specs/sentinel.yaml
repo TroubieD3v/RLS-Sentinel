@@ -1,0 +1,53 @@
+# Expectations derived from the PostgreSQL documentation's description of the passwd example
+# (independent of RLS Sentinel's own output):
+#   * every user can SEE all rows, but not the pwhash column;
+#   * a normal user can UPDATE only their own row, only the listed columns, and only to an allowed shell;
+#   * the administrator can see and change everything; normal users have no INSERT/DELETE privilege.
+version: 1
+project: pg-docs-passwd-benchmark
+source: {type: fixture, name: external-benchmark}
+identity_mode: postgres_roles
+
+actors:
+  - {id: admin, pg_role: bench_admin, tenant: null, kind: admin}
+  - {id: bob,   pg_role: bench_bob,   tenant: null}
+  - {id: alice, pg_role: bench_alice, tenant: null}
+
+resources:
+  - {id: admin_row, table: public.passwd, pk: {uid: 0}}
+  - {id: bob_row,   table: public.passwd, pk: {uid: 1}}
+  - {id: alice_row, table: public.passwd, pk: {uid: 2}}
+
+tables:
+  - {table: public.passwd, touch_column: real_name}
+
+expectations:
+  - {id: bob-sees-own-row,                 actor: bob,   operation: SELECT, resource: bob_row,   expected: ALLOW}
+  - {id: bob-sees-alice-row,               actor: bob,   operation: SELECT, resource: alice_row, expected: ALLOW}
+  - {id: bob-cannot-read-pwhash,           actor: bob,   operation: SELECT, resource: alice_row, columns: [pwhash], expected: DENY, deny_gate: grant}
+  - {id: bob-reads-real-name-column,       actor: bob,   operation: SELECT, resource: alice_row, columns: [real_name], expected: ALLOW}
+  - {id: bob-updates-own-real-name,        actor: bob,   operation: UPDATE, resource: bob_row, set: {real_name: Robert}, expected: ALLOW}
+  - {id: bob-updates-own-shell-to-bash,    actor: bob,   operation: UPDATE, resource: bob_row, set: {shell: /bin/bash}, expected: ALLOW}
+  - {id: bob-cannot-set-disallowed-shell,  actor: bob,   operation: UPDATE, resource: bob_row, set: {shell: /bin/evil}, expected: DENY}
+  - {id: bob-cannot-update-alice-row,      actor: bob,   operation: UPDATE, resource: alice_row, set: {real_name: Mallory}, expected: DENY}
+  - {id: bob-cannot-update-gid,            actor: bob,   operation: UPDATE, resource: bob_row, set: {gid: 0}, expected: DENY, deny_gate: grant}
+  - {id: bob-cannot-delete-own-row,        actor: bob,   operation: DELETE, resource: bob_row, expected: DENY, deny_gate: grant}
+  - id: bob-cannot-insert-row
+    actor: bob
+    operation: INSERT
+    table: public.passwd
+    row: {user_name: mallory, uid: 99, gid: 99, real_name: Mallory, home_dir: /home/mallory, shell: /bin/bash}
+    expected: DENY
+    deny_gate: grant
+  - {id: admin-updates-alice-row,          actor: admin, operation: UPDATE, resource: alice_row, set: {real_name: Alicia}, expected: ALLOW}
+  - {id: admin-updates-alice-shell-freely, actor: admin, operation: UPDATE, resource: alice_row, set: {shell: /bin/fish}, expected: ALLOW}
+  - {id: admin-deletes-bob-row,            actor: admin, operation: DELETE, resource: bob_row, expected: ALLOW}
+  - id: admin-inserts-row
+    actor: admin
+    operation: INSERT
+    table: public.passwd
+    row: {user_name: carol, uid: 100, gid: 1, real_name: Carol, home_dir: /home/carol, shell: /bin/bash}
+    expected: ALLOW
+  - {id: alice-cannot-update-bob-row,      actor: alice, operation: UPDATE, resource: bob_row, set: {real_name: Mallory}, expected: DENY}
+
+execution: {environment: disposable, max_statements: 50, statement_timeout_ms: 2000, parallelism: 2, allow_mutations: true}

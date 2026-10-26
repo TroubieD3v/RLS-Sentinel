@@ -1,0 +1,30 @@
+name: multi-tenant-saas
+title: Multi-tenant SaaS (Alpha / Beta)
+description: >
+  Two tenants (Alpha, Beta) with users Alice, Charlie, Bob, a read-only support reader and an anonymous
+  visitor. Covers per-command policies, column-level grants, RLS-enabled/no-policy default deny,
+  security_invoker vs owner-privileged views, and a SECURITY DEFINER function. The vulnerable variant
+  contains seven annotated defects plus one latent defect that runtime evidence shows is masked; the secure variant is the negative control and must produce zero
+  confirmed violations.
+tags: [multi-tenant, views, functions, column-grants]
+min_pg_major: 15
+roles: [app_owner, app_user, support_reader, app_alice, app_charlie, app_bob, app_support, app_anon]
+variants:
+  vulnerable: [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_vulnerable.sql, sql/30_seed.sql]
+  secure:     [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_secure.sql,     sql/30_seed.sql]
+spec: specs/sentinel.yaml
+# Hand-derived from the policy text in sql/20_policies_*.sql. (bob-cannot-read-alpha-project was missed in the
+# first hand derivation and caught by the harness; it is a genuine consequence of a TO PUBLIC policy.)
+expected_outcomes:
+  vulnerable:
+    fail:
+      - bob-cannot-insert-invoice-into-alpha
+      - bob-cannot-move-own-project-to-alpha
+      - bob-cannot-read-alpha-invoice-via-owner-view
+      - bob-cannot-read-alpha-invoice-via-function
+      - bob-cannot-read-alpha-comment
+      - bob-cannot-delete-alpha-comment
+      - bob-cannot-read-alpha-project     # DEFECT 1 applies to PUBLIC, i.e. to every role, not only anonymous
+      - anon-cannot-read-private-project
+  secure:
+    fail: []

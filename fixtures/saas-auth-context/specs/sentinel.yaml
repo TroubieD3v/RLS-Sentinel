@@ -1,0 +1,94 @@
+# Expected policy for Fixture C (Supabase-style, SYNTHETIC identity context).
+# All claim-based results are produced by set_config() inside a disposable database: they exercise policy logic only.
+version: 1
+project: saas-auth-context-demo
+source: {type: fixture, name: saas-auth-context}
+identity_mode: supabase_synthetic
+
+tenants:
+  - {id: alpha, value: "11111111-1111-1111-1111-111111111111"}
+  - {id: beta,  value: "22222222-2222-2222-2222-222222222222"}
+
+actors:
+  - id: alice
+    pg_role: authenticated
+    tenant: alpha
+    claims: {sub: "aaaa1111-0000-0000-0000-000000000001", role: authenticated, org_id: "11111111-1111-1111-1111-111111111111", "guc:app.current_org": "11111111-1111-1111-1111-111111111111"}
+  - id: bob
+    pg_role: authenticated
+    tenant: beta
+    claims: {sub: "bbbb2222-0000-0000-0000-000000000002", role: authenticated, org_id: "22222222-2222-2222-2222-222222222222", "guc:app.current_org": "22222222-2222-2222-2222-222222222222"}
+  - id: no_subject
+    pg_role: authenticated
+    tenant: null
+    description: "Signed-in role but the request carries NO subject claim (lost identity context)"
+    claims: {role: authenticated}
+  - id: anon
+    pg_role: anon
+    tenant: null
+    kind: anonymous
+  - id: service
+    pg_role: service_role
+    tenant: null
+    kind: service
+    expect_bypass: true
+    description: "service_role bypasses RLS by design; shown only to demonstrate that it must not stand in for an end user"
+
+resources:
+  - {id: alice_profile,  table: public.profiles,     pk: {id: "aaaa1111-0000-0000-0000-000000000001"}, tenant: alpha}
+  - {id: bob_profile,    table: public.profiles,     pk: {id: "bbbb2222-0000-0000-0000-000000000002"}, tenant: beta}
+  - {id: alice_todo,     table: public.todos,        pk: {id: "70d00000-0000-0000-0000-00000000a001"}, tenant: alpha}
+  - {id: bob_todo,       table: public.todos,        pk: {id: "70d00000-0000-0000-0000-00000000b001"}, tenant: beta}
+  - {id: alpha_note,     table: public.team_notes,   pk: {id: "7e000000-0000-0000-0000-00000000a001"}, tenant: alpha}
+  - {id: beta_note,      table: public.team_notes,   pk: {id: "7e000000-0000-0000-0000-00000000b001"}, tenant: beta}
+  - {id: alpha_legacy,   table: public.legacy_notes, pk: {id: "1e900000-0000-0000-0000-00000000a001"}, tenant: alpha}
+  - {id: beta_legacy,    table: public.legacy_notes, pk: {id: "1e900000-0000-0000-0000-00000000b001"}, tenant: beta}
+
+tables:
+  - {table: public.profiles,     tenant_column: id,     touch_column: display_name}
+  - {table: public.todos,        tenant_column: owner_id, touch_column: title}
+  - {table: public.team_notes,   tenant_column: org_id, touch_column: body}
+  - {table: public.legacy_notes, tenant_column: org_id, touch_column: body}
+
+expectations:
+  - {id: alice-reads-own-todo,            actor: alice, operation: SELECT, resource: alice_todo, expected: ALLOW}
+  - {id: bob-cannot-read-alice-todo,      actor: bob,   operation: SELECT, resource: alice_todo, expected: DENY, rule: RLS-006}
+  - {id: bob-cannot-update-alice-todo,    actor: bob,   operation: UPDATE, resource: alice_todo, expected: DENY, rule: RLS-007}
+  - {id: bob-cannot-delete-alice-todo,    actor: bob,   operation: DELETE, resource: alice_todo, expected: DENY, rule: RLS-007}
+  - id: no-subject-cannot-read-todo
+    description: A request with no subject claim must see nothing (NULL identity must never open access).
+    actor: no_subject
+    operation: SELECT
+    resource: alice_todo
+    expected: DENY
+    rule: RLS-013
+  - {id: anon-cannot-read-todo,           actor: anon,  operation: SELECT, resource: alice_todo, expected: DENY, deny_gate: grant, rule: RLS-015}
+  - {id: alice-reads-own-profile,         actor: alice, operation: SELECT, resource: alice_profile, expected: ALLOW}
+  - {id: bob-cannot-read-alice-profile,   actor: bob,   operation: SELECT, resource: alice_profile, expected: DENY}
+  - {id: alice-updates-own-profile,       actor: alice, operation: UPDATE, resource: alice_profile, expected: ALLOW}
+  - {id: bob-cannot-update-alice-profile, actor: bob,   operation: UPDATE, resource: alice_profile, expected: DENY}
+  - {id: alice-reads-alpha-note,          actor: alice, operation: SELECT, resource: alpha_note, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-note,      actor: bob,   operation: SELECT, resource: alpha_note, expected: DENY, rule: RLS-006}
+  - {id: alice-reads-alpha-legacy-note,   actor: alice, operation: SELECT, resource: alpha_legacy, expected: ALLOW}
+  - {id: bob-cannot-read-alpha-legacy-note, actor: bob, operation: SELECT, resource: alpha_legacy, expected: DENY, rule: RLS-006}
+  - id: bob-forging-app-setting-cannot-read-alpha-legacy-note
+    description: >
+      Bob keeps his own verified identity but overrides the free-form setting app.current_org with Alpha's value,
+      as any session with SQL access could. If this returns the row, the policy trusts a client-settable value.
+      SYNTHETIC: only meaningful if untrusted clients can execute SQL.
+    actor: bob
+    operation: SELECT
+    resource: alpha_legacy
+    claims_override:
+      sub: "bbbb2222-0000-0000-0000-000000000002"
+      role: authenticated
+      org_id: "22222222-2222-2222-2222-222222222222"
+      "guc:app.current_org": "11111111-1111-1111-1111-111111111111"
+    expected: DENY
+    rule: RLS-013
+  - {id: service-bypass-reads-todo,       actor: service, operation: SELECT, resource: alice_todo, expected: ALLOW}
+
+privileges:
+  - {id: anon-has-no-table-grants, role: anon, table: public.todos, deny: [SELECT, INSERT, UPDATE, DELETE, TRUNCATE]}
+
+execution: {environment: disposable, max_statements: 100, statement_timeout_ms: 2000, parallelism: 2, allow_mutations: true}

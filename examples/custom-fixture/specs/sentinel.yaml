@@ -1,0 +1,39 @@
+# Requirement: a user can read, change and delete only their own notes, and cannot create notes for someone else.
+version: 1
+project: custom-notes-example
+source: {type: fixture, name: custom-notes-example}
+identity_mode: postgres_roles
+
+actors:
+  - {id: alice, pg_role: ex_alice}
+  - {id: bob,   pg_role: ex_bob}
+
+resources:
+  - {id: alice_note, table: public.notes, pk: {id: 1}}
+  - {id: bob_note,   table: public.notes, pk: {id: 2}}
+
+tables:
+  - {table: public.notes, touch_column: body}
+
+expectations:
+  - {id: alice-reads-own-note,           actor: alice, operation: SELECT, resource: alice_note, expected: ALLOW}
+  - {id: alice-cannot-read-bob-note,     actor: alice, operation: SELECT, resource: bob_note,   expected: DENY}
+  - {id: bob-cannot-read-alice-note,     actor: bob,   operation: SELECT, resource: alice_note, expected: DENY}
+  - {id: alice-updates-own-note,         actor: alice, operation: UPDATE, resource: alice_note, set: {body: edited}, expected: ALLOW}
+  - {id: alice-cannot-update-bob-note,   actor: alice, operation: UPDATE, resource: bob_note,   set: {body: hacked}, expected: DENY}
+  - {id: alice-cannot-delete-bob-note,   actor: alice, operation: DELETE, resource: bob_note,   expected: DENY}
+  - {id: bob-deletes-own-note,           actor: bob,   operation: DELETE, resource: bob_note,   expected: ALLOW}
+  - id: alice-cannot-insert-note-for-bob
+    actor: alice
+    operation: INSERT
+    table: public.notes
+    row: {id: 50, owner: ex_bob, body: forged}
+    expected: DENY
+  - id: alice-inserts-own-note
+    actor: alice
+    operation: INSERT
+    table: public.notes
+    row: {id: 51, owner: ex_alice, body: mine}
+    expected: ALLOW
+
+execution: {environment: disposable, max_statements: 50, statement_timeout_ms: 2000, parallelism: 2, allow_mutations: true}

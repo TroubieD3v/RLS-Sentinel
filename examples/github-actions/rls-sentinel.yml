@@ -1,0 +1,38 @@
+# Example: verify your RLS policies on every pull request and publish the result to GitHub code scanning.
+#
+# Assumes your repository contains a fixture directory (schema + policies + synthetic seed + expected-policy spec),
+# see docs/authorized-testing.md and examples/custom-fixture. Nothing here connects to a real database.
+name: RLS verification
+
+on:
+  pull_request:
+    paths: ["db/**", "rls-fixture/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  rls:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Install a wheel you built and trust (see the release assets of this tool); verify its checksum first.
+      - run: pip install ./vendor/rls_sentinel-1.0.0-py3-none-any.whl
+      - name: Verify the authorization matrix (fails on confirmed violations or unverified coverage)
+        env:
+          SENTINEL_FIXTURE_BACKEND: docker
+          SENTINEL_FIXTURE_IMAGE: postgres:17-alpine
+        run: |
+          rls-sentinel test --fixture ./rls-fixture --variant secure --trust-fixture \
+            --fail-on low --min-coverage 100 --format sarif -o rls.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('rls.sarif') != ''
+        with:
+          sarif_file: rls.sarif
+          category: rls-sentinel

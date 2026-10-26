@@ -1,0 +1,84 @@
+# Expected policy for Fixture B: public / internal / archived / legal-hold articles, a ledger, a restrictive-only table.
+version: 1
+project: policy-precedence-demo
+source: {type: fixture, name: policy-precedence}
+identity_mode: postgres_roles
+
+tenants:
+  - {id: acme,   value: acme}
+  - {id: globex, value: globex}
+
+actors:
+  - {id: reader,   pg_role: pp_reader,   tenant: acme}
+  - {id: editor,   pg_role: pp_editor,   tenant: acme}
+  - {id: globex,   pg_role: pp_globex,   tenant: globex}
+  - {id: globex_editor, pg_role: pp_gx_editor, tenant: globex}
+  - {id: outsider, pg_role: pp_outsider, tenant: null, kind: anonymous, description: "No memberships: only PUBLIC policies apply"}
+  - {id: owner,    pg_role: pp_owner,    tenant: null, kind: owner, description: "Table owner; must be subject to RLS if FORCE is set"}
+  - {id: auditor,  pg_role: pp_bypass,   tenant: null, kind: admin, expect_bypass: true, description: "BYPASSRLS role, bypass deliberately tested"}
+  - {id: unmarked_bypass, pg_role: pp_bypass, tenant: null, description: "Same BYPASSRLS role WITHOUT declaring the bypass: policies are not exercised"}
+
+resources:
+  - {id: public_post,    table: public.articles, pk: {id: "a1000000-0000-0000-0000-000000000001"}, tenant: acme}
+  - {id: acme_memo,      table: public.articles, pk: {id: "a1000000-0000-0000-0000-000000000002"}, tenant: acme}
+  - {id: globex_memo,    table: public.articles, pk: {id: "a1000000-0000-0000-0000-000000000003"}, tenant: globex}
+  - {id: archived_memo,  table: public.articles, pk: {id: "a1000000-0000-0000-0000-000000000004"}, tenant: acme}
+  - {id: hold_memo,      table: public.articles, pk: {id: "a1000000-0000-0000-0000-000000000005"}, tenant: acme}
+  - {id: acme_ledger,    table: public.ledger,   pk: {id: "1e000000-0000-0000-0000-000000000001"}, tenant: acme}
+  - {id: globex_ledger,  table: public.ledger,   pk: {id: "1e000000-0000-0000-0000-000000000002"}, tenant: globex}
+  - {id: locked_row,     table: public.locked,   pk: {id: "10000000-0000-0000-0000-000000000001"}}
+
+tables:
+  - {table: public.articles, tenant_column: org, touch_column: title}
+  - {table: public.ledger,   tenant_column: org, touch_column: amount}
+  - {table: public.locked,   protected: true, touch_column: note}
+
+expectations:
+  # ---- permissive policies OR together; PUBLIC applies to roles with no memberships
+  - {id: reader-reads-public-post,        actor: reader,   operation: SELECT, resource: public_post, expected: ALLOW}
+  - {id: outsider-reads-public-post,      actor: outsider, operation: SELECT, resource: public_post, expected: ALLOW}
+  - {id: reader-reads-own-internal-memo,  actor: reader,   operation: SELECT, resource: acme_memo,    expected: ALLOW}
+  - {id: outsider-cannot-read-internal,   actor: outsider, operation: SELECT, resource: acme_memo,    expected: DENY}
+  - {id: globex-cannot-read-acme-memo,    actor: globex,   operation: SELECT, resource: acme_memo,    expected: DENY}
+  - {id: globex-reads-own-memo,           actor: globex,   operation: SELECT, resource: globex_memo,  expected: ALLOW}
+  # ---- restrictive SELECT policy (NOT archived) is AND-ed with permissive ones
+  - {id: reader-cannot-read-archived,     actor: reader,   operation: SELECT, resource: archived_memo, expected: DENY, rule: RLS-011}
+  - {id: editor-cannot-read-archived,     actor: editor,   operation: SELECT, resource: archived_memo, expected: DENY, rule: RLS-011}
+  # ---- writes: permissive editor policies + restrictive legal-hold policies
+  - {id: editor-updates-internal-memo,    actor: editor,   operation: UPDATE, resource: acme_memo,    expected: ALLOW}
+  - {id: editor-cannot-update-legal-hold, actor: editor,   operation: UPDATE, resource: hold_memo,    expected: DENY, rule: RLS-011}
+  - {id: editor-deletes-internal-memo,    actor: editor,   operation: DELETE, resource: acme_memo,    expected: ALLOW}
+  - {id: editor-cannot-delete-legal-hold, actor: editor,   operation: DELETE, resource: hold_memo,    expected: DENY, rule: RLS-011}
+  - {id: globex-editor-cannot-update-acme-memo, actor: globex_editor, operation: UPDATE, resource: acme_memo, expected: DENY, rule: RLS-007}
+  - {id: globex-reader-cannot-update-by-grant,  actor: globex, operation: UPDATE, resource: acme_memo, expected: DENY, deny_gate: grant}
+  - {id: reader-cannot-update-by-grant,   actor: reader,   operation: UPDATE, resource: acme_memo,    expected: DENY, deny_gate: grant}
+  - id: editor-inserts-acme-article
+    actor: editor
+    operation: INSERT
+    table: public.articles
+    as_tenant: acme
+    row: {id: $uuid, title: Draft, visibility: internal}
+    expected: ALLOW
+  - id: editor-cannot-insert-globex-article
+    actor: editor
+    operation: INSERT
+    table: public.articles
+    as_tenant: globex
+    row: {id: $uuid, title: Evil, visibility: internal}
+    expected: DENY
+    rule: RLS-005
+  # ---- a restrictive policy alone never grants access
+  - {id: reader-cannot-read-restrictive-only-table, actor: reader, operation: SELECT, resource: locked_row, expected: DENY, rule: RLS-011}
+  - {id: editor-cannot-read-restrictive-only-table, actor: editor, operation: SELECT, resource: locked_row, expected: DENY, rule: RLS-011}
+  # ---- owner / FORCE / BYPASSRLS
+  - {id: reader-reads-own-ledger,         actor: reader,   operation: SELECT, resource: acme_ledger,   expected: ALLOW}
+  - {id: globex-cannot-read-acme-ledger,  actor: globex,   operation: SELECT, resource: acme_ledger,   expected: DENY}
+  - {id: globex-reads-own-ledger,         actor: globex,   operation: SELECT, resource: globex_ledger, expected: ALLOW}
+  - {id: owner-cannot-read-ledger,        description: "Without FORCE ROW LEVEL SECURITY the owner bypasses every policy.", actor: owner, operation: SELECT, resource: globex_ledger, expected: DENY, rule: RLS-004}
+  - {id: auditor-bypass-reads-ledger,     actor: auditor,  operation: SELECT, resource: globex_ledger, expected: ALLOW}
+  - {id: unmarked-bypass-reads-ledger,    description: "A BYPASSRLS role proves nothing about policies; must be INCONCLUSIVE, never a policy PASS.", actor: unmarked_bypass, operation: SELECT, resource: globex_ledger, expected: ALLOW}
+
+privileges:
+  - {id: staff-cannot-write-ledger, role: pp_staff, table: public.ledger, deny: [INSERT, UPDATE, DELETE, TRUNCATE]}
+
+execution: {environment: disposable, max_statements: 100, statement_timeout_ms: 2000, parallelism: 2, allow_mutations: true}

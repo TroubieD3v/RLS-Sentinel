@@ -1,0 +1,80 @@
+# RLS Sentinel - reference deployment.
+#
+#   python scripts/make_env.py      # writes .env with random secrets (never committed)
+#   docker compose up --build
+#   open http://127.0.0.1:8787      # paste SENTINEL_API_TOKEN from .env into the Unlock dialog
+#
+# Network layout:
+#   edge  : api only; the UI/API is published on 127.0.0.1 and nowhere else.
+#   data  : api <-> metadata-db (internal, no outbound).
+#   lab   : api <-> fixture-db (internal, no outbound). fixture-db is DISPOSABLE: data lives in tmpfs, the superuser
+#           credential exists only for this lab, and it is never the metadata store or a source database.
+
+name: rls-sentinel
+
+services:
+  api:
+    build: .
+    image: rls-sentinel:local
+    depends_on:
+      metadata-db: { condition: service_healthy }
+      fixture-db: { condition: service_healthy }
+    environment:
+      SENTINEL_API_TOKEN: ${SENTINEL_API_TOKEN:?run `python scripts/make_env.py` to create .env}
+      SENTINEL_METADATA_URL: postgresql+psycopg://sentinel:${METADATA_DB_PASSWORD:?missing}@metadata-db:5432/sentinel
+      SENTINEL_FIXTURE_BACKEND: external
+      SENTINEL_FIXTURE_ADMIN_URL: postgresql://postgres:${FIXTURE_DB_PASSWORD:?missing}@fixture-db:5432/postgres
+      SENTINEL_FIXTURE_DISPOSABLE: "true"
+      SENTINEL_ALLOWED_ORIGINS: http://127.0.0.1:8787,http://localhost:8787
+      SENTINEL_ALLOWED_TARGETS: ${SENTINEL_ALLOWED_TARGETS:-}
+    ports:
+      - "127.0.0.1:8787:8787"
+    networks: [edge, data, lab]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  metadata-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: ${METADATA_DB_PASSWORD:?missing}
+      POSTGRES_DB: sentinel
+    volumes: [metadata-data:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinel"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+  fixture-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${FIXTURE_DB_PASSWORD:?missing}
+    tmpfs: ["/var/lib/postgresql/data:uid=70,gid=70,mode=0700"]
+    networks: [lab]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+networks:
+  edge: {}
+  data: { internal: true }
+  lab: { internal: true }
+
+volumes:
+  metadata-data: {}

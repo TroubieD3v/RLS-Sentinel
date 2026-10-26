@@ -1,0 +1,34 @@
+name: policy-precedence
+title: Policy precedence (permissive / restrictive / PUBLIC / owner / FORCE / BYPASSRLS)
+description: >
+  One articles table with permissive and restrictive policies, PUBLIC and role-group scoping, a ledger table
+  that demonstrates owner bypass versus FORCE ROW LEVEL SECURITY, a BYPASSRLS role, and a table that has only a
+  restrictive policy. The vulnerable variant expresses restrictive intent with permissive policies (CREATE POLICY
+  defaults to PERMISSIVE). Changing a single policy from PERMISSIVE to RESTRICTIVE is the What-if Lab demo.
+tags: [precedence, restrictive, force-rls, bypassrls]
+min_pg_major: 15
+roles: [pp_owner, pp_staff, pp_editors, pp_reader, pp_editor, pp_globex, pp_gx_editor, pp_outsider, pp_bypass]
+variants:
+  vulnerable: [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_vulnerable.sql, sql/30_seed.sql]
+  secure:     [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_secure.sql,     sql/30_seed.sql]
+spec: specs/sentinel.yaml
+# Hand-derived from the policy text. unmarked-bypass-reads-ledger is INCONCLUSIVE in both variants by design.
+# (The first derivation missed that a permissive TO PUBLIC policy also leaks internal rows across orgs; the harness
+# caught it and the derivation was corrected from PostgreSQL's documented policy-combination rules.)
+expected_outcomes:
+  vulnerable:
+    fail:
+      - outsider-cannot-read-internal        # DEFECT 1: permissive 'NOT archived' TO PUBLIC grants every non-archived row to everyone
+      - globex-cannot-read-acme-memo         # (same cause)
+      - globex-editor-cannot-update-acme-memo  # DEFECT 2: permissive 'NOT legal_hold' TO PUBLIC grants UPDATE on every non-held row
+      - reader-cannot-read-archived
+      - editor-cannot-read-archived
+      - editor-cannot-update-legal-hold
+      - editor-cannot-delete-legal-hold
+      - reader-cannot-read-restrictive-only-table
+      - editor-cannot-read-restrictive-only-table
+      - owner-cannot-read-ledger
+    inconclusive: [unmarked-bypass-reads-ledger]
+  secure:
+    fail: []
+    inconclusive: [unmarked-bypass-reads-ledger]

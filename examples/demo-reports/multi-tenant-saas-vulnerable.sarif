@@ -1,0 +1,1339 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "RLS Sentinel",
+          "version": "1.0.0",
+          "semanticVersion": "1.0.0",
+          "rules": [
+            {
+              "id": "RLS-002",
+              "name": "ExcessivelyBroadPermissivePolicy",
+              "shortDescription": {
+                "text": "Excessively broad permissive policy"
+              },
+              "fullDescription": {
+                "text": "A permissive policy whose expression is constant TRUE applies to roles that the spec expects to be tenant-bounded. Permissive policies are OR-ed, so one broad policy removes the tenant filter."
+              },
+              "help": {
+                "text": "Replace the constant expression with a tenant-bounded predicate, or restrict the policy to the specific role that legitimately needs broad access.\nMinimum evidence: Applicable policy + expected row boundary",
+                "markdown": "**Remediation:** Replace the constant expression with a tenant-bounded predicate, or restrict the policy to the specific role that legitimately needs broad access.\n\n**Minimum evidence:** Applicable policy + expected row boundary"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "policy"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createpolicy.html"
+            },
+            {
+              "id": "RLS-003",
+              "name": "UnintendedPublicRolePolicyOrGrant",
+              "shortDescription": {
+                "text": "Unintended PUBLIC role policy or grant"
+              },
+              "fullDescription": {
+                "text": "A policy or table grant targets PUBLIC, i.e. every current and future role, on a protected table."
+              },
+              "help": {
+                "text": "Target an explicit role (TO app_user) instead of PUBLIC and REVOKE ... FROM PUBLIC.\nMinimum evidence: Role scope + target exposure context",
+                "markdown": "**Remediation:** Target an explicit role (TO app_user) instead of PUBLIC and REVOKE ... FROM PUBLIC.\n\n**Minimum evidence:** Role scope + target exposure context"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "exposure"
+                ],
+                "precision": "medium"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createpolicy.html"
+            },
+            {
+              "id": "RLS-005",
+              "name": "InsertUpdateMissingOrIneffectiveNewRowGuard",
+              "shortDescription": {
+                "text": "INSERT / UPDATE missing or ineffective new-row guard"
+              },
+              "fullDescription": {
+                "text": "A WITH CHECK expression is absent, constant TRUE or does not bind the tenant column, so a role can create or move rows into a tenant it does not belong to."
+              },
+              "help": {
+                "text": "Add or tighten WITH CHECK so the new row satisfies the same tenant predicate as USING.\nMinimum evidence: DML-specific semantics / runtime test",
+                "markdown": "**Remediation:** Add or tighten WITH CHECK so the new row satisfies the same tenant predicate as USING.\n\n**Minimum evidence:** DML-specific semantics / runtime test"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "policy"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createpolicy.html"
+            },
+            {
+              "id": "RLS-006",
+              "name": "CrossTenantSelectVisibility",
+              "shortDescription": {
+                "text": "Cross-tenant SELECT visibility"
+              },
+              "fullDescription": {
+                "text": "A role obtained a row that belongs to another tenant (runtime evidence under test roles)."
+              },
+              "help": {
+                "text": "Constrain every permissive SELECT policy with the tenant predicate; remove constant-TRUE policies.\nMinimum evidence: Runtime evidence under test roles",
+                "markdown": "**Remediation:** Constrain every permissive SELECT policy with the tenant predicate; remove constant-TRUE policies.\n\n**Minimum evidence:** Runtime evidence under test roles"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "isolation"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+            },
+            {
+              "id": "RLS-008",
+              "name": "PrivilegedViewExposureWithOwnerPolicyContext",
+              "shortDescription": {
+                "text": "Privileged view exposure with owner-policy context"
+              },
+              "fullDescription": {
+                "text": "A view without security_invoker runs with its owner's privileges; if the owner bypasses RLS on the base table, the view exposes rows across tenants."
+              },
+              "help": {
+                "text": "ALTER VIEW <view> SET (security_invoker = true) (PostgreSQL 15+), or move the tenant filter into the view and revoke direct access.\nMinimum evidence: View metadata + role behavior test",
+                "markdown": "**Remediation:** ALTER VIEW <view> SET (security_invoker = true) (PostgreSQL 15+), or move the tenant filter into the view and revoke direct access.\n\n**Minimum evidence:** View metadata + role behavior test"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "view"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createview.html"
+            },
+            {
+              "id": "RLS-009",
+              "name": "SecurityDefinerMisuseCandidate",
+              "shortDescription": {
+                "text": "SECURITY DEFINER misuse candidate"
+              },
+              "fullDescription": {
+                "text": "A SECURITY DEFINER function owned by a role that bypasses RLS on protected tables is executable by non-owner roles. Not every SECURITY DEFINER function is vulnerable; this is a candidate unless a runtime case confirms leakage."
+              },
+              "help": {
+                "text": "Prefer SECURITY INVOKER; if DEFINER is required, pin search_path, check the caller's tenant inside the function, and REVOKE EXECUTE FROM PUBLIC.\nMinimum evidence: Function owner/grants/context + concrete behavior if claimed confirmed",
+                "markdown": "**Remediation:** Prefer SECURITY INVOKER; if DEFINER is required, pin search_path, check the caller's tenant inside the function, and REVOKE EXECUTE FROM PUBLIC.\n\n**Minimum evidence:** Function owner/grants/context + concrete behavior if claimed confirmed"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "function"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createfunction.html"
+            },
+            {
+              "id": "RLS-010",
+              "name": "UnexpectedGrantOrColumnPrivilege",
+              "shortDescription": {
+                "text": "Unexpected GRANT or column privilege"
+              },
+              "fullDescription": {
+                "text": "Effective SQL privileges differ from the privileges the spec expects for a role."
+              },
+              "help": {
+                "text": "REVOKE the unexpected privilege (or update the expectation if the privilege is intended).\nMinimum evidence: Catalog + user-defined permission expectations",
+                "markdown": "**Remediation:** REVOKE the unexpected privilege (or update the expectation if the privilege is intended).\n\n**Minimum evidence:** Catalog + user-defined permission expectations"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "grants"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-grant.html"
+            },
+            {
+              "id": "RLS-014",
+              "name": "TruncateReferencesTriggerGrantOutsideRls",
+              "shortDescription": {
+                "text": "TRUNCATE / REFERENCES / TRIGGER grant outside RLS"
+              },
+              "fullDescription": {
+                "text": "TRUNCATE, REFERENCES and TRIGGER privileges are not governed by row-level policies. This is a distinct privilege finding, not an RLS bypass."
+              },
+              "help": {
+                "text": "REVOKE TRUNCATE, REFERENCES, TRIGGER ON <table> FROM <role>.\nMinimum evidence: Explicit distinct privilege finding",
+                "markdown": "**Remediation:** REVOKE TRUNCATE, REFERENCES, TRIGGER ON <table> FROM <role>.\n\n**Minimum evidence:** Explicit distinct privilege finding"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "grants"
+                ],
+                "precision": "medium"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-grant.html"
+            },
+            {
+              "id": "RLS-015",
+              "name": "UnexpectedAnonymousAccess",
+              "shortDescription": {
+                "text": "Unexpected anonymous access"
+              },
+              "fullDescription": {
+                "text": "The anonymous/guest identity can read or write rows the spec expects it to be denied."
+              },
+              "help": {
+                "text": "Remove anonymous grants and PUBLIC policies on private tables; expose only explicitly public rows.\nMinimum evidence: Actual guest identity + applicable policy/grant",
+                "markdown": "**Remediation:** Remove anonymous grants and PUBLIC policies on private tables; expose only explicitly public rows.\n\n**Minimum evidence:** Actual guest identity + applicable policy/grant"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "isolation"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+            },
+            {
+              "id": "RLS-017",
+              "name": "AccidentalAllTenantWriteBySharedRole",
+              "shortDescription": {
+                "text": "Accidental all-tenant write by shared role"
+              },
+              "fullDescription": {
+                "text": "A shared (non-tenant-bound) role or group modified rows across tenants in a controlled mutation test."
+              },
+              "help": {
+                "text": "Bind write policies to the tenant predicate even for shared or support roles.\nMinimum evidence: Test identity + mutation proof",
+                "markdown": "**Remediation:** Bind write policies to the tenant predicate even for shared or support roles.\n\n**Minimum evidence:** Test identity + mutation proof"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "isolation"
+                ],
+                "precision": "high"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/sql-createpolicy.html"
+            },
+            {
+              "id": "RLS-020",
+              "name": "UncoveredTenantTableOperation",
+              "shortDescription": {
+                "text": "Uncovered tenant table / operation"
+              },
+              "fullDescription": {
+                "text": "A protected table or SQL operation has no expectation in the spec, so its boundary is unverified. This is coverage tracking, not a vulnerability by itself."
+              },
+              "help": {
+                "text": "Add ALLOW/DENY expectations for the missing actor/operation combinations.\nMinimum evidence: Coverage tracking, not vulnerability by itself",
+                "markdown": "**Remediation:** Add ALLOW/DENY expectations for the missing actor/operation combinations.\n\n**Minimum evidence:** Coverage tracking, not vulnerability by itself"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "tags": [
+                  "security",
+                  "postgresql",
+                  "row-level-security",
+                  "coverage"
+                ],
+                "precision": "medium"
+              },
+              "helpUri": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html"
+            }
+          ],
+          "properties": {
+            "ruleset": "2026.10.1"
+          }
+        }
+      },
+      "results": [
+        {
+          "ruleId": "RLS-005",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) INSERT public.invoices: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 25
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.invoices#bob-cannot-insert-invoice-into-alpha",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:b6fc9f835f73b182d199a73d"
+          },
+          "properties": {
+            "severity": "Critical",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-insert-invoice-into-alpha"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-005",
+          "ruleIndex": 2,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) UPDATE public.projects: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.projects#bob-cannot-move-own-project-to-alpha",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:302c2758f6083d41459c30af"
+          },
+          "properties": {
+            "severity": "Critical",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-move-own-project-to-alpha"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-017",
+          "ruleIndex": 9,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) DELETE public.comments: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 43
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.comments#bob-cannot-delete-alpha-comment",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:dc399ef4cb55df0b4af102be"
+          },
+          "properties": {
+            "severity": "Critical",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-delete-alpha-comment"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-006",
+          "ruleIndex": 3,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) SELECT public.comments: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 40
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.comments#bob-cannot-read-alpha-comment",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:cfab24ce768b0474dec556ba"
+          },
+          "properties": {
+            "severity": "High",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-read-alpha-comment"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-006",
+          "ruleIndex": 3,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) SELECT public.projects: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.projects#bob-cannot-read-alpha-project",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:662841d5ecead82c3e24ba43"
+          },
+          "properties": {
+            "severity": "High",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-read-alpha-project"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-008",
+          "ruleIndex": 4,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) SELECT public.invoices via public.v_invoices_owner: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 22
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.invoices#bob-cannot-read-alpha-invoice-via-owner-view",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:26b29d45a6a6df8cd7e6ec5e"
+          },
+          "properties": {
+            "severity": "High",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-read-alpha-invoice-via-owner-view"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-009",
+          "ruleIndex": 5,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "bob (app_bob) EXECUTE public.invoices via public.get_invoice: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/10_schema.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 28
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.invoices#bob-cannot-read-alpha-invoice-via-function",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:b66865010a514db27241154c"
+          },
+          "properties": {
+            "severity": "High",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "bob-cannot-read-alpha-invoice-via-function"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-015",
+          "ruleIndex": 8,
+          "level": "error",
+          "kind": "fail",
+          "message": {
+            "text": "anon (app_anon) SELECT public.projects: Access succeeded although the actor must be denied. [CONFIRMED_VIOLATION; RUNTIME_OBSERVATION, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.projects#anon-cannot-read-private-project",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:5c07b867ef213c8532526eeb"
+          },
+          "properties": {
+            "severity": "High",
+            "evidenceClass": "CONFIRMED_VIOLATION",
+            "confidence": "OBSERVED",
+            "caseIds": [
+              "anon-cannot-read-private-project"
+            ],
+            "verifiedBy": "runtime_lab"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive DELETE policy \"comments_delete_any\" on public.comments is constant TRUE and applies to app_user. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 43
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.comments:comments_delete_any",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:8e30b6249bf1d36dfa306c5b"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive SELECT policy \"comments_select_all\" on public.comments is constant TRUE and applies to app_user. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 40
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.comments:comments_select_all",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:563a77e360f8c5d3f49edbff"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive INSERT policy \"invoices_insert\" on public.invoices is constant TRUE and applies to app_user. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 25
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.invoices:invoices_insert",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:c0a9bac91f545bc63ed91e05"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive UPDATE policy \"invoices_update\" on public.invoices is constant TRUE and applies to app_user. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 29
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.invoices:invoices_update",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:f92b5d668c0c50db140080e8"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive SELECT policy \"projects_public_read\" on public.projects is constant TRUE and applies to PUBLIC. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.projects:projects_public_read",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:3d7e7467298ef1e036d23623"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-002",
+          "ruleIndex": 0,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive UPDATE policy \"projects_update_loose\" on public.projects is constant TRUE and applies to app_user. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 16
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.projects:projects_update_loose",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:96dc79cefffee7088b30bc7f"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-003",
+          "ruleIndex": 1,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Permissive SELECT policy \"projects_public_read\" on public.projects applies to PUBLIC (all roles). [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 20
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.projects:projects_public_read",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:6128fdbb1a4254b76add161c"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "ESTABLISHED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-005",
+          "ruleIndex": 2,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "INSERT policy \"invoices_insert\" on public.invoices: INSERT WITH CHECK is constant TRUE: any permitted role may insert rows for any tenant. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 25
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.invoices:invoices_insert",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:48a443b555c5c42e97d28064"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-005",
+          "ruleIndex": 2,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "UPDATE policy \"invoices_update\" on public.invoices: UPDATE WITH CHECK is constant TRUE while USING is restrictive: a role can update a visible row into another tenant. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 29
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.invoices:invoices_update",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:09e5ba7fb45a3a9b337835bf"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-005",
+          "ruleIndex": 2,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "UPDATE policy \"projects_update_loose\" on public.projects: UPDATE WITH CHECK is constant TRUE while USING is restrictive: a role can update a visible row into another tenant. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 16
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "policy:public.projects:projects_update_loose",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:da98498e094c829c4ad9c84f"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-008",
+          "ruleIndex": 4,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "View public.v_invoices_owner (owner app_owner, no security_invoker) reads public.invoices, and its owner bypasses RLS there (TABLE_OWNER). [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 53
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.v_invoices_owner",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:8cd2f62c84dc1f764a5d189c"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-010",
+          "ruleIndex": 6,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "Role app_user holds unexpected privilege(s) TRUNCATE on public.comments. [CONFIGURATION_RISK; CATALOG_FACT, USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "app_user@public.comments",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:af7af14dd5cbf868842dc09d"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "ESTABLISHED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-014",
+          "ruleIndex": 7,
+          "level": "warning",
+          "kind": "fail",
+          "message": {
+            "text": "TRUNCATE on public.comments is granted to app_user. [CONFIGURATION_RISK; CATALOG_FACT]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/10_schema.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 37
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.comments:TRUNCATE",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:c7a56784c4475eb38afaabd1"
+          },
+          "properties": {
+            "severity": "Medium",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "ESTABLISHED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-009",
+          "ruleIndex": 5,
+          "level": "note",
+          "kind": "fail",
+          "message": {
+            "text": "SECURITY DEFINER function public.get_invoice(p_id uuid) (owner app_owner) can be executed by app_alice, app_anon, app_bob, app_charlie, app_support, app_user… and PUBLIC; its owner bypasses RLS on protected tables. [CONFIGURATION_RISK; CATALOG_FACT, STATIC_INFERENCE]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "sql/20_policies_vulnerable.sql",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 59
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.get_invoice(p_id uuid)",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:5493391f381013f471b46368"
+          },
+          "properties": {
+            "severity": "Needs triage",
+            "evidenceClass": "CONFIGURATION_RISK",
+            "confidence": "CONDITIONAL",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 10,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT on public.comments. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.comments",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:d905599fd68ee5431d2dd41f"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 10,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers UPDATE on public.documents. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.documents",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:0199e2011be0299897b51edd"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 10,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT, UPDATE, DELETE on public.memberships. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.memberships",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:322875c5366d4428968d0001"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        },
+        {
+          "ruleId": "RLS-020",
+          "ruleIndex": 10,
+          "level": "note",
+          "kind": "review",
+          "message": {
+            "text": "No expectation covers INSERT, DELETE on public.projects. [INCONCLUSIVE; USER_EXPECTATION]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/github/RLS_Sentinel/backend/rls_sentinel/_bundled/fixtures/multi-tenant-saas/specs/sentinel.yaml",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              },
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "public.projects",
+                  "kind": "member"
+                }
+              ]
+            }
+          ],
+          "partialFingerprints": {
+            "rlsSentinel/v1": "fp1:ae487c7e6dce4f639ac1f9f9"
+          },
+          "properties": {
+            "severity": "Informational",
+            "evidenceClass": "INCONCLUSIVE",
+            "confidence": "ASSUMED",
+            "caseIds": [],
+            "verifiedBy": "catalog"
+          }
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "properties": {
+            "coverage": 100.0,
+            "postgres": "18.3"
+          }
+        }
+      ],
+      "automationDetails": {
+        "id": "rls-sentinel/d002f39aa4ee"
+      },
+      "properties": {
+        "environment": "DISPOSABLE LAB",
+        "sourceRowDataCollected": false
+      }
+    }
+  ]
+}

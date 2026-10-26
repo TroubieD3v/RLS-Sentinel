@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify the tag matches the package version
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('backend/pyproject.toml','rb'))['project']['version'])")
+          [ "v${version}" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} does not match package version v${version}"; exit 1; }
+      - run: pip install build cyclonedx-bom
+      - run: python scripts/build_release.py
+      - name: SBOMs (CycloneDX) and checksums
+        run: |
+          pip install dist/*.whl
+          cyclonedx-py environment --of JSON -o dist/sbom-python.cdx.json
+          (cd frontend && npx --yes @cyclonedx/cyclonedx-npm --omit dev --output-format JSON --output-file ../dist/sbom-ui.cdx.json)
+          (cd dist && sha256sum *.whl *.tar.gz *.json > SHA256SUMS)
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file CHANGELOG.md --verify-tag

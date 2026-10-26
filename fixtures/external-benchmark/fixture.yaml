@@ -1,0 +1,23 @@
+name: external-benchmark
+title: Independent benchmark - PostgreSQL documentation "passwd" example
+description: >
+  A second, independently sourced schema: the passwd example from the PostgreSQL documentation, with the expected
+  behavior taken from the documentation text rather than from this tool. The "secure" variant is the documented
+  policy set (negative control); the "vulnerable" variant contains three hand-made mutations. See docs/benchmarks.md
+  for methodology, measured results and limitations.
+tags: [benchmark, external, postgres-docs]
+min_pg_major: 15
+roles: [bench_owner, bench_admin, bench_bob, bench_alice]
+variants:
+  vulnerable: [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_vulnerable.sql, sql/30_seed.sql]
+  secure:     [sql/00_roles.sql, sql/10_schema.sql, sql/20_policies_secure.sql,     sql/30_seed.sql]
+spec: specs/sentinel.yaml
+expected_outcomes:
+  vulnerable:
+    fail:
+      - bob-cannot-set-disallowed-shell     # mutation 2
+      - bob-cannot-update-alice-row         # mutation 1
+      - bob-cannot-update-gid               # mutation 3 (grant gate expected, UPDATE(gid) now granted)
+      - alice-cannot-update-bob-row         # mutation 1
+  secure:
+    fail: []

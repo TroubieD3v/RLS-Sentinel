@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ───────────────────────── Midnight Observatory tokens ───────────────────────── */
+:root[data-theme="dark"] {
+  --bg: #080d15;
+  --surface: #0f1826;
+  --surface-raised: #142033;
+  --surface-hover: #1b2b41;
+  --border: #29374c;
+  --text: #e8eef7;
+  --muted: #9baac0;
+  --teal: #43ddc6;
+  --violet: #af9bff;
+  --amber: #f4be61;
+  --coral: #fb7288;
+  --blue: #7ab6ff;
+  --on-accent: #06101a;
+  --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px -12px rgba(0,0,0,.6);
+  --grid: rgba(122,182,255,.05);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-raised: #f0f4fa;
+  --surface-hover: #e6edf7;
+  --border: #d9e1ed;
+  --text: #182437;
+  --muted: #4f6076;
+  /* accents darkened for AA contrast on pale surfaces (>= 4.5:1) */
+  --teal: #0a6b5d;
+  --violet: #5b3fd1;
+  --amber: #86580a;
+  --coral: #b4233c;
+  --blue: #1b5eb0;
+  --on-accent: #ffffff;
+  --shadow: 0 1px 2px rgba(24,36,55,.06), 0 8px 24px -14px rgba(24,36,55,.25);
+  --grid: rgba(27,94,176,.06);
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-hover: var(--surface-hover);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-teal: var(--teal);
+  --color-violet: var(--violet);
+  --color-amber: var(--amber);
+  --color-coral: var(--coral);
+  --color-sky: var(--blue);
+  --font-sans: "Inter", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+code, pre, .mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+::selection { background: color-mix(in srgb, var(--violet) 40%, transparent); }
+
+/* motion: 150-220ms, disabled when reduced */
+.t-fast { transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 200ms ease, opacity 180ms ease, transform 200ms ease; }
+:root[data-reduced-motion="1"] *, :root[data-reduced-motion="1"] *::before, :root[data-reduced-motion="1"] *::after {
+  animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.cursor-blink { animation: blink 1.1s steps(2, start) infinite; }
+@keyframes shimmer { from { background-position: -200px 0; } to { background-position: 200px 0; } }
+.skeleton { background: linear-gradient(90deg, var(--surface-raised) 0, var(--surface-hover) 50%, var(--surface-raised) 100%); background-size: 400px 100%; animation: shimmer 1.4s linear infinite; border-radius: 8px; }
+@keyframes slide-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.enter { animation: slide-in 200ms ease both; }
+
+/* surfaces */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+.card-flat { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; }
+.divider { border-top: 1px solid var(--border); }
+
+/* status lozenges: always icon + text, never colour alone */
+.lozenge { display: inline-flex; align-items: center; gap: 5px; padding: 1px 9px 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; border: 1px solid currentColor; white-space: nowrap; background: color-mix(in srgb, currentColor 10%, transparent); }
+.tone-teal { color: var(--teal); } .tone-coral { color: var(--coral); } .tone-amber { color: var(--amber); }
+.tone-violet { color: var(--violet); } .tone-blue { color: var(--blue); } .tone-muted { color: var(--muted); }
+
+/* evidence line */
+.evidence-line { position: relative; padding-left: 22px; }
+.evidence-line::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(var(--coral), var(--violet), var(--teal)); border-radius: 2px; }
+.evidence-line > li { position: relative; padding: 6px 0; }
+.evidence-line > li::before { content: ""; position: absolute; left: -19px; top: 14px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--violet); }
+
+/* matrix */
+.matrix-cell:focus-visible, .matrix-cell[data-selected="true"] { outline: 2px solid var(--blue); outline-offset: -2px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 22%, transparent); }
+
+/* code diff rail */
+.diff-add { background: color-mix(in srgb, var(--teal) 12%, transparent); box-shadow: inset 3px 0 0 var(--teal); }
+.diff-del { background: color-mix(in srgb, var(--coral) 12%, transparent); box-shadow: inset 3px 0 0 var(--coral); }
+
+/* SQL tokens */
+.sql-kw { color: var(--violet); font-weight: 600; } .sql-str { color: var(--amber); } .sql-num { color: var(--blue); } .sql-cm { color: var(--muted); font-style: italic; }
+.sql-fn { color: var(--teal); }
+
+/* react-flow adjustments */
+.react-flow { --xy-background-color: transparent; --xy-edge-label-background-color: var(--surface); --xy-edge-label-color: var(--text); --xy-minimap-background-color: var(--surface); --xy-controls-button-background-color: var(--surface-raised); --xy-controls-button-color: var(--text); --xy-controls-button-border-color: var(--border); --xy-attribution-background-color: transparent; }
+.react-flow__attribution { display: none; }
+
+.sr-only-focusable:not(:focus):not(:focus-within) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
