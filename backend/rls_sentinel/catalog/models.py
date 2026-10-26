@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 EvidenceType = Literal["CATALOG_FACT", "STATIC_INFERENCE", "RUNTIME_OBSERVATION", "USER_EXPECTATION"]
 PolicyCommand = Literal["ALL", "SELECT", "INSERT", "UPDATE", "DELETE"]
@@ -244,17 +244,29 @@ class Snapshot(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     # ---- convenience lookups (not serialized) ----
+    # Indexes are rebuilt whenever the underlying list object or its length changes, so callers that replace or
+    # append to snapshot lists still get correct answers; lookups are O(1) instead of a scan per call.
+    _idx_tables: tuple[int, int, dict[str, TableRec]] | None = PrivateAttr(default=None)
+    _idx_roles: tuple[int, int, dict[str, RoleRec]] | None = PrivateAttr(default=None)
+    _idx_policies: tuple[int, int, dict[str, list[PolicyRec]]] | None = PrivateAttr(default=None)
+
     def table(self, qualified: str) -> TableRec | None:
-        for t in self.tables:
-            if t.qualified == qualified:
-                return t
-        return None
+        c = self._idx_tables
+        if c is None or c[0] != id(self.tables) or c[1] != len(self.tables):
+            c = self._idx_tables = (id(self.tables), len(self.tables), {t.qualified: t for t in reversed(self.tables)})
+        return c[2].get(qualified)
 
     def role(self, name: str) -> RoleRec | None:
-        for r in self.roles:
-            if r.name == name:
-                return r
-        return None
+        c = self._idx_roles
+        if c is None or c[0] != id(self.roles) or c[1] != len(self.roles):
+            c = self._idx_roles = (id(self.roles), len(self.roles), {r.name: r for r in reversed(self.roles)})
+        return c[2].get(name)
 
     def policies_for(self, qualified: str) -> list[PolicyRec]:
-        return [p for p in self.policies if p.table == qualified]
+        c = self._idx_policies
+        if c is None or c[0] != id(self.policies) or c[1] != len(self.policies):
+            by: dict[str, list[PolicyRec]] = {}
+            for p in self.policies:
+                by.setdefault(p.table, []).append(p)
+            c = self._idx_policies = (id(self.policies), len(self.policies), by)
+        return list(c[2].get(qualified, []))

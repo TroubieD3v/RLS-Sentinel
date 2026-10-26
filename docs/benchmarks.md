@@ -60,3 +60,43 @@ python scripts/benchmark.py --repeat 3 --md bench.md --json bench.json
 python scripts/pg_matrix.py --versions 15 16 17 18          # needs Docker
 rls-sentinel demo smoke                                       # headless pass/fail against documented outcomes
 ```
+
+## Scale
+
+`scripts/scale_benchmark.py` generates a synthetic multi-tenant schema of a chosen size and times every phase of a real
+run separately against a real PostgreSQL server. Each table has 10 policies (tenant-scoped SELECT/INSERT/UPDATE/DELETE, one
+restrictive policy, five unrelated audit policies) and 4 behavioural expectations. Every 25th table has a planted
+`USING (true)` SELECT leak and every 40th a `WITH CHECK (true)` INSERT leak, so each run also checks that exactly the
+planted violations are found.
+
+Local PostgreSQL 18.3, Windows 11, 32 logical CPUs, harness parallelism 4; median of 3 runs
+(raw data: [assets/scale-benchmark.json](assets/scale-benchmark.json)):
+
+| Tables | Policies | Cases | Planted / found | Provision | Catalog snapshot | Behavioural tests | Rule engine | Graph | Reports (model + JSON/HTML/SARIF) | Store in metadata DB | Total |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 | 1 000 | 400 | 7 / 7 | 0.95 s | 0.14 s | 1.02 s | 0.02 s | 0.04 s | 0.23 s | 0.53 s | 5.8 s |
+| 300 | 3 000 | 1 200 | 20 / 20 | 1.90 s | 0.29 s | 2.36 s | 0.08 s | 0.20 s | 0.70 s | 1.23 s | 9.8 s |
+| 1 000 | 10 000 | 4 000 | 65 / 65 | 5.54 s | 0.74 s | 8.75 s | 0.31 s | 1.03 s | 2.47 s | 4.01 s | 26.8 s |
+
+Totals include about 2.7 s to start a throwaway cluster, which is paid once per run. Behavioural tests cost about 2.2 ms
+per case and scale linearly. At 1 000 tables the run produced 6 155 findings (mostly per-table static notes), a graph of
+21 177 nodes and 56 390 edges (the UI shows a capped, focused subgraph), an 8 MB HTML report and a 7.3 MB SARIF file.
+Peak Python allocations during that run, measured with `tracemalloc`, were 392 MiB.
+
+What the first measurement found, and what changed (the "before" column analysed only 5 000 policies, so the real
+gain is larger than shown):
+
+| Problem at 1 000 tables | Before | After |
+|---|---:|---:|
+| Catalog listing stopped at 5 000 policies without failing the run (it was recorded only in the coverage manifest) | 5 000 of 10 000 policies analysed | all 10 000; limits raised, and hitting one now adds a coverage note to the report |
+| Rule engine looked tables and grants up by scanning lists (quadratic) | 4.18 s | 0.31 s |
+| Migration line numbers counted newlines from the start of the file for every statement | 2.99 s | 0.50 s |
+| Secret redaction ran every regular expression on every stored string | 5.17 s to store | 4.01 s |
+
+Limits that remain: a YAML spec is capped at 256 KiB and 20 000 nodes, and `execution.max_statements` at 5 000, as a
+defence against hostile input. That is enough for about 1 000 tables at 4 expectations each; larger suites should be
+split by schema. Numbers above are from one machine and are indicative only.
+
+```bash
+python scripts/scale_benchmark.py --tables 100 300 1000 --repeat 3 [--memory]
+```

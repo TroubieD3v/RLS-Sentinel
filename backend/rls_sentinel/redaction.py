@@ -22,6 +22,9 @@ _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._\-~+/]{12,}=*")
 _PROVIDER_KEYS = re.compile(r"\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{10,}\b|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b")
 _LONG_LITERAL = re.compile(r"'([^']{24,})'")
 _HIGH_ENTROPY = re.compile(r"^[A-Za-z0-9+/=_\-]{24,}$")
+# Every pattern used by redact_text needs at least one of these substrings, so text without any of them is returned
+# untouched. This keeps redaction of large snapshots cheap without weakening it.
+_MAYBE_SECRET = re.compile(r"(?i)://|pass|pwd|secret|api|token|service|eyj|bearer|akia|gh[pousr]_|_(?:live|test)_")
 
 
 def redact_dsn(dsn: str) -> str:
@@ -35,7 +38,7 @@ def redact_dsn(dsn: str) -> str:
 
 def redact_text(text: str) -> str:
     """Mask credentials, JWTs and bearer tokens in free text."""
-    if not text:
+    if not text or not _MAYBE_SECRET.search(text):
         return text
     text = redact_dsn(text)
     text = _JWT.sub(MASK, text)
@@ -81,17 +84,20 @@ _SENSITIVE_KEYS = {
 
 def redact_obj(obj: Any, *, extra_keys: Iterable[str] = ()) -> Any:
     """Recursively redact secrets in JSON-like structures."""
-    keys = _SENSITIVE_KEYS | {k.lower() for k in extra_keys}
+    return _redact_obj(obj, _SENSITIVE_KEYS | {k.lower() for k in extra_keys})
+
+
+def _redact_obj(obj: Any, keys: set[str]) -> Any:
     if isinstance(obj, dict):
         out = {}
         for k, v in obj.items():
             if isinstance(k, str) and k.lower() in keys and v not in (None, "", False):
                 out[k] = MASK
             else:
-                out[k] = redact_obj(v, extra_keys=extra_keys)
+                out[k] = _redact_obj(v, keys)
         return out
     if isinstance(obj, list | tuple):
-        return [redact_obj(v, extra_keys=extra_keys) for v in obj]
+        return [_redact_obj(v, keys) for v in obj]
     if isinstance(obj, str):
         return redact_text(obj)
     return obj

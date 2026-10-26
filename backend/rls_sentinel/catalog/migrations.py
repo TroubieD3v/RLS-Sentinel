@@ -5,6 +5,8 @@ Catalog state remains the source of truth; locations are only hints for reviewer
 
 from __future__ import annotations
 
+import bisect
+import re
 from pathlib import Path
 
 from pglast import ast, parse_sql
@@ -12,8 +14,13 @@ from pglast import ast, parse_sql
 from .models import Provenance, Snapshot
 
 
-def _line_of(text_bytes: bytes, offset: int) -> int:
-    return text_bytes.count(b"\n", 0, max(offset, 0)) + 1
+def _newline_offsets(text_bytes: bytes) -> list[int]:
+    return [m.start() for m in re.finditer(b"\n", text_bytes)]
+
+
+def _line_of(newlines: list[int], offset: int) -> int:
+    """1-based line of a byte offset, given the sorted offsets of every newline (O(log n) per lookup)."""
+    return bisect.bisect_left(newlines, max(offset, 0)) + 1
 
 
 def _first_code_offset(text_bytes: bytes, start: int) -> int:
@@ -41,9 +48,10 @@ def locate_objects(files: list[Path], base: Path) -> dict[str, tuple[str, int]]:
         except Exception:  # noqa: S112 - unparsable migration files are skipped, never fatal
             continue
         rel = f.relative_to(base).as_posix() if base in f.parents or f.parent == base else f.name
+        newlines = _newline_offsets(data)
         for raw in stmts:
             s = raw.stmt
-            line = _line_of(data, _first_code_offset(data, raw.stmt_location))
+            line = _line_of(newlines, _first_code_offset(data, raw.stmt_location))
             if isinstance(s, ast.CreatePolicyStmt):
                 schema = s.table.schemaname or "public"
                 out[f"policy:{schema}.{s.table.relname}:{s.policy_name}"] = (rel, line)

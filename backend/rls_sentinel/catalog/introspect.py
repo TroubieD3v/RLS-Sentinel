@@ -47,9 +47,9 @@ _CMD: dict[str, Any] = {"r": "SELECT", "a": "INSERT", "w": "UPDATE", "d": "DELET
 _KIND: dict[str, Any] = {"r": "table", "p": "partitioned_table", "v": "view", "m": "materialized_view", "f": "foreign_table"}
 
 DEFAULT_LIMITS = {
-    "relations": 5000, "columns": 100000, "constraints": 20000, "triggers": 10000, "policies": 5000,
-    "policy_deps": 50000, "roles": 2000, "memberships": 20000, "grants": 100000, "functions": 10000,
-    "effective": 200000, "effective_roles": 200,
+    "relations": 20000, "columns": 400000, "constraints": 100000, "triggers": 50000, "policies": 50000,
+    "policy_deps": 200000, "roles": 10000, "memberships": 100000, "grants": 400000, "functions": 20000,
+    "effective": 400000, "effective_roles": 200,
 }
 
 
@@ -92,6 +92,8 @@ class Introspector:
             return []
         if len(rows) > limit:
             self.skipped.append({"object_kind": name, "reason": "row_limit_reached", "limit": limit})
+            self.notes.append(f"Catalog listing '{name}' stopped at its limit of {limit} rows; objects beyond it are not "
+                              "analysed, so findings and graphs for them are missing.")
             rows = rows[:limit]
         self._progress("fetched", {"query": name, "rows": len(rows)})
         return rows

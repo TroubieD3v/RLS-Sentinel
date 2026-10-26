@@ -538,13 +538,17 @@ class RuleEngine:
 
     # RLS-014 ----------------------------------------------------------------------------------------
     def rls014(self) -> None:
+        grantees_by: dict[tuple[str, str], set[str]] = {}
+        for g in self.snap.grants:
+            if g.object_type == "table":
+                grantees_by.setdefault((g.object, g.privilege), set()).add(g.grantee)
         for q in self.protected:
             t = self.snap.table(q)
             if t is None or t.kind not in ("table", "partitioned_table"):
                 continue
             for priv, sev in (("TRUNCATE", "Medium"), ("REFERENCES", "Low"), ("TRIGGER", "Low")):
-                grantees = sorted({g.grantee for g in self.snap.grants if g.object_type == "table" and g.object == q and g.privilege == priv
-                                   and g.grantee != t.owner and not (self.rg.roles.get(g.grantee) and (self.rg.roles[g.grantee].superuser))})
+                grantees = sorted({g for g in grantees_by.get((q, priv), ())
+                                   if g != t.owner and not (self.rg.roles.get(g) and self.rg.roles[g].superuser)})
                 if not grantees:
                     continue
                 why = {"TRUNCATE": "TRUNCATE removes every row of the table in one statement and is not subject to row policies.",
