@@ -47,4 +47,5 @@ estimate how many real-world RLS defects the tool finds or misses. See [benchmar
 - The Docker Compose deployment was exercised with a fixture run on Docker Desktop (Windows) and on the Linux CI
   runner; macOS was not tried.
 - The CI workflow (PostgreSQL 15–18, Playwright, Compose smoke test, wheel build) and the code-scanning workflow run
-  green on GitHub. The release workflow and the example GitHub Action have not been executed yet.
+  green on GitHub. The Release workflow built and attested v1.0.0; its publishing step was then moved to
+  `scripts/publish_release.sh`, which has not been run for a release yet. The example GitHub Action has never been executed.
