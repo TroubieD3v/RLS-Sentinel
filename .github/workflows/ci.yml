@@ -26,8 +26,8 @@ jobs:
       SENTINEL_TEST_BACKEND: docker
       SENTINEL_FIXTURE_IMAGE: postgres:${{ matrix.pg }}-alpine
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -50,8 +50,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -78,11 +78,11 @@ jobs:
       PYTHONUTF8: "1"
       SENTINEL_FIXTURE_BACKEND: local
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -100,7 +100,7 @@ jobs:
         working-directory: frontend
         env:
           SENTINEL_BIN: rls-sentinel
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-results
@@ -113,7 +113,7 @@ jobs:
     needs: [backend, frontend]
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: bash scripts/smoke-test.sh
 
   package:
@@ -121,11 +121,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - run: pip install build
@@ -137,7 +137,7 @@ jobs:
           /tmp/wheel-venv/bin/rls-sentinel version
           /tmp/wheel-venv/bin/rls-sentinel fixtures list
           /tmp/wheel-venv/bin/python -c "from rls_sentinel.config import find_ui_dir, find_fixtures_dir; assert find_ui_dir() and find_fixtures_dir()"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist

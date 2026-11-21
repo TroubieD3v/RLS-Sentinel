@@ -19,11 +19,11 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - name: Verify the tag matches the package version
@@ -38,12 +38,12 @@ jobs:
           cyclonedx-py environment --of JSON -o dist/sbom-python.cdx.json
           (cd frontend && npx --yes @cyclonedx/cyclonedx-npm --omit dev --output-format JSON --output-file ../dist/sbom-ui.cdx.json)
           (cd dist && sha256sum *.whl *.tar.gz *.json > SHA256SUMS)
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             dist/*.whl
             dist/*.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-${{ github.ref_name }}
           path: dist/
