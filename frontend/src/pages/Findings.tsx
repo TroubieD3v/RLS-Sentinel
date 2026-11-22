@@ -30,7 +30,7 @@ function EvidenceLine({ f }: { f: Finding }) {
   return (
     <ol className="evidence-line grid gap-0.5 list-none m-0" aria-label="Evidence lineage" data-testid="evidence-line">
       {steps.map((s, i) => (
-        <li key={i}><div className="text-[10px] uppercase tracking-widest text-muted">{s.label}</div><div className="mono break-words text-[12px]">{s.value}</div></li>
+        <li key={i}><div className="text-[11.5px] text-muted">{s.label}</div><div className="mono break-words text-[12px]">{s.value}</div></li>
       ))}
     </ol>
   );
@@ -84,26 +84,26 @@ function Detail({ f, runId }: { f: Finding; runId: string }) {
   const fixes = (sugg.data?.suggestions ?? []).filter((s) => s.finding_ids.includes(f.id));
   const prov = f.provenance.includes("RUNTIME_OBSERVATION") ? "runtime" : f.provenance.includes("STATIC_INFERENCE") ? "static" : f.provenance.includes("CATALOG_FACT") ? "catalog" : "insufficient";
   return (
-    <article className="grid gap-4" data-testid="finding-detail" aria-label={`Finding ${f.rule_id}`}>
+    <article className="grid gap-3" data-testid="finding-detail" aria-label={`Finding ${f.rule_id}`}>
       <header className="grid gap-2">
         <div className="flex gap-2 flex-wrap items-center"><EvidenceLozenge cls={f.evidence_class} /><SeverityLozenge severity={f.severity} /><ProvenanceLozenge kind={prov} />
           {f.suppressed && <Lozenge tone="muted" icon={<EyeOff size={12} aria-hidden />}>Suppressed</Lozenge>}</div>
-        <h2 className="text-lg font-bold leading-snug">{f.rule_id} · {f.title}</h2>
+        <h2 className="text-[15px] font-semibold leading-snug"><span className="mono">{f.rule_id}</span> · {f.title}</h2>
         <p className="text-xs text-muted">Severity rationale: {f.severity_rationale}</p>
       </header>
-      <section aria-label="What happened"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-1">What happened</h3><p>{f.summary}</p></section>
-      {f.why_it_matters && <section aria-label="Why it matters"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-1">Why it matters</h3><p>{f.why_it_matters}</p></section>}
+      <section aria-label="What happened"><h3 className="section-label mb-1">What happened</h3><p>{f.summary}</p></section>
+      {f.why_it_matters && <section aria-label="Why it matters"><h3 className="section-label mb-1">Why it matters</h3><p>{f.why_it_matters}</p></section>}
       {(f.expected || f.observed) && (
         <section className="grid grid-cols-2 gap-3" aria-label="Expected and observed">
-          <div className="card-flat p-3"><div className="text-xs uppercase text-muted font-bold">Expected (independent spec)</div><div className="mono mt-1">{f.expected ?? "—"}</div></div>
-          <div className="card-flat p-3"><div className="text-xs uppercase text-muted font-bold">Observed</div><div className="mono mt-1 break-words">{f.observed ?? "—"}</div></div>
+          <div className="card-flat p-3"><div className="text-[11.5px] text-muted">Expected (independent spec)</div><div className="mono mt-1">{f.expected ?? "—"}</div></div>
+          <div className="card-flat p-3"><div className="text-[11.5px] text-muted">Observed</div><div className="mono mt-1 break-words">{f.observed ?? "—"}</div></div>
         </section>
       )}
-      <section aria-label="Evidence"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-2">Evidence line</h3><EvidenceLine f={f} />
+      <section aria-label="Evidence"><h3 className="section-label mb-2">Evidence line</h3><EvidenceLine f={f} />
         {f.location && <p className="text-xs text-muted mt-2">Source: <span className="mono">{f.location.path}{f.location.line ? `:${f.location.line}` : ""}</span></p>}</section>
-      {relCase && <section aria-label="Executed test case"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-2">Executed test case</h3><div className="card-flat p-3"><CaseDetail c={relCase} /></div></section>}
-      {f.reproduction.length > 0 && <section aria-label="Steps to reproduce"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-1">Steps to reproduce (disposable fixture)</h3><Terminal title="reproduce" lines={f.reproduction} /></section>}
-      <section aria-label="Remediation"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-1">Suggested remediation</h3><p>{f.remediation || rule?.remediation}</p>
+      {relCase && <section aria-label="Executed test case"><h3 className="section-label mb-2">Executed test case</h3><div className="card-flat p-3"><CaseDetail c={relCase} /></div></section>}
+      {f.reproduction.length > 0 && <section aria-label="Steps to reproduce"><h3 className="section-label mb-1">Steps to reproduce (disposable fixture)</h3><Terminal title="reproduce" lines={f.reproduction} /></section>}
+      <section aria-label="Remediation"><h3 className="section-label mb-1">Suggested remediation</h3><p>{f.remediation || rule?.remediation}</p>
         <p className="text-xs text-muted mt-1">Suggestions are hypotheses. They are verified only by replaying them in a disposable clone — never applied automatically.</p>
         {fixes.map((s) => (
           <div key={s.id} className="mt-2 card-flat p-3 grid gap-2">
@@ -114,10 +114,10 @@ function Detail({ f, runId }: { f: Finding; runId: string }) {
           </div>
         ))}
       </section>
-      <section aria-label="Limitations" className="card-flat p-3"><h3 className="text-xs font-bold uppercase tracking-wide text-muted mb-1">Limitations</h3><p className="text-[13px]">{f.limitations || "None recorded."}</p></section>
+      <section aria-label="Limitations" className="card-flat p-3"><h3 className="section-label mb-1">Limitations</h3><p className="text-[13px]">{f.limitations || "None recorded."}</p></section>
       {f.references.length > 0 && <ul className="flex gap-3 flex-wrap text-xs">{f.references.map((u) => <li key={u}><a href={u} target="_blank" rel="noreferrer noopener" className="text-sky underline inline-flex items-center gap-1">PostgreSQL / vendor docs <ExternalLink size={11} aria-hidden /></a></li>)}</ul>}
       <section aria-label="Review" className="card-flat p-3 grid gap-3">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-muted">Review workflow</h3>
+        <h3 className="section-label">Review workflow</h3>
         <div className="grid sm:grid-cols-[200px_1fr] gap-3">
           <Field label="State" htmlFor="rv-state"><Select id="rv-state" value={state} onChange={(e) => setState(e.target.value as Lifecycle)} data-testid="review-state">{LIFECYCLE.map((l) => <option key={l} value={l}>{LIFE_LABEL[l]}</option>)}</Select></Field>
           <Field label="Reviewer note" htmlFor="rv-note"><Input id="rv-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={4000} /></Field>
@@ -162,7 +162,7 @@ export default function FindingsPage() {
   if (error) return <ErrorState error={error} />;
   if (!run) return <EmptyState title="No findings yet">Run a verification first. Findings link every claim to its evidence.</EmptyState>;
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Findings & evidence" title="Findings" subtitle="Confirmed violations are runtime-proven; static risks are hypotheses from catalog metadata; inconclusive items are unknown, never safe." />
       <Card>
         <div className="flex flex-wrap gap-3 items-end">
@@ -179,23 +179,23 @@ export default function FindingsPage() {
           <span className="ml-auto text-xs text-muted mono" data-testid="findings-count">{list.data?.total ?? 0} findings</span>
         </div>
       </Card>
-      <div className="grid xl:grid-cols-[minmax(340px,480px)_1fr] gap-4 items-start">
+      <div className="grid xl:grid-cols-[minmax(340px,460px)_1fr] gap-3 items-start">
         <div className="grid gap-3" data-testid="findings-list">
           {list.isLoading && <Skeleton className="h-64" />}
           {list.error && <ErrorState error={list.error} />}
           {!list.isLoading && items.length === 0 && <EmptyState title="No findings match">Zero findings is not proof of safety — check the coverage card on the Overview.</EmptyState>}
           {Object.entries(grouped).filter(([, v]) => v.length).map(([k, v]) => (
-            <section key={k} aria-label={GROUP_TITLE[k]}>
-              <h2 className="text-[11px] font-bold tracking-[0.14em] uppercase text-muted mb-1.5">{GROUP_TITLE[k] ?? k} · {v.length}</h2>
-              <ul className="grid gap-1.5">
+            <section key={k} aria-label={GROUP_TITLE[k]} className="card overflow-hidden">
+              <h2 className="panel-head !rounded-none text-[12.5px] font-semibold">{GROUP_TITLE[k] ?? k}<span className="ml-auto mono text-[11.5px] text-muted font-normal">{v.length}</span></h2>
+              <ul>
                 {v.map((f) => (
-                  <li key={f.id}>
+                  <li key={f.id} className="border-b border-line-soft last:border-b-0">
                     <button type="button" onClick={() => setSp({ id: f.id })} data-testid="finding-row" aria-current={f.id === selId}
-                      className={clsx("t-fast w-full text-left card-flat p-2.5 grid gap-1 hover:bg-hover", f.id === selId && "ring-2 ring-[var(--blue)]")}>
-                      <div className="flex items-center gap-2 flex-wrap"><SeverityLozenge severity={f.severity} /><span className="mono font-bold text-[12px]">{f.rule_id}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-muted">{LIFE_LABEL[f.lifecycle_state]}</span></div>
-                      <div className="text-[13px] font-medium line-clamp-2">{f.summary}</div>
-                      <div className="mono text-[11px] text-muted truncate">{f.subject}</div>
+                      className={clsx("t-fast w-full text-left px-3 py-1.5 grid gap-0.5 border-l-2 hover:bg-hover", f.id === selId ? "bg-sel border-sky" : "border-transparent")}>
+                      <div className="flex items-center gap-2"><SeverityLozenge severity={f.severity} /><span className="mono text-[12px]">{f.rule_id}</span>
+                        <span className="ml-auto text-[11.5px] text-muted">{LIFE_LABEL[f.lifecycle_state]}</span></div>
+                      <div className="text-[12.5px] truncate">{f.summary}</div>
+                      <div className="mono text-[11.5px] text-muted truncate">{f.subject}</div>
                     </button>
                   </li>
                 ))}

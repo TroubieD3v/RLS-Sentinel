@@ -54,9 +54,9 @@ export default function Connections() {
   };
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Authorized connections & workspaces" title="Connections" subtitle="Two modes, never mixed: read-only catalog inspection of an authorized source, and mutating verification in a disposable lab." />
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         <Card title="Read-only source" actions={<ModeBadge mode="READ-ONLY SOURCE" />} id="mode-source">
           <ul className="text-[13px] grid gap-1.5 list-disc pl-4">
             <li>Only bounded <span className="mono">pg_catalog</span> SELECTs inside a READ ONLY transaction; no DDL, DML or row data.</li>
@@ -73,7 +73,7 @@ export default function Connections() {
         </Card>
       </div>
 
-      <div className="grid xl:grid-cols-2 gap-4 items-start">
+      <div className="grid xl:grid-cols-2 gap-3 items-start">
         <Card title="Add a live source" subtitle="Authorized, least-privilege, catalog-only" id="add-source">
           <form className="grid gap-3" onSubmit={(e) => e.preventDefault()}>
             <Field label="Alias" htmlFor="c-alias"><Input id="c-alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="staging-app-db" /></Field>
@@ -110,13 +110,13 @@ export default function Connections() {
             )}
           </form>
         </Card>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           <Card title="Least-privilege inspector" subtitle="Create this role on the source before connecting" id="least-priv"><Terminal title="psql · admin session" prompt={null} lines={INSPECTOR_SQL} /></Card>
           <Card title="Registered connections" id="conn-list">
             {conns.isLoading ? <Skeleton className="h-16" /> : (conns.data?.length ?? 0) === 0 ? <EmptyState title="No live sources registered" icon={<DatabaseZap />}>The disposable lab works without any connection: choose a bundled fixture below.</EmptyState> : (
               <ul className="grid gap-2">{conns.data!.map((c) => (
                 <li key={c.id} className="card-flat p-3 flex items-center gap-3 flex-wrap" data-testid="conn-row">
-                  <div className="min-w-0"><div className="font-bold">{c.target_alias}</div><div className="mono text-xs text-muted truncate">{c.display_target} · PG {c.pg_major_version ?? "?"} · secret: {c.secret.reference}</div>
+                  <div className="min-w-0"><div className="font-semibold">{c.target_alias}</div><div className="mono text-xs text-muted truncate">{c.display_target} · PG {c.pg_major_version ?? "?"} · secret: {c.secret.reference}</div>
                     <div className="text-xs text-muted">{c.last_connection_status} · {timeAgo(c.created_at)}</div></div>
                   <div className="ml-auto flex gap-2"><Button size="sm" onClick={() => void scan({ connection_id: c.id }, `Scan ${c.target_alias}`)}>Catalog scan</Button>
                     <Button size="sm" variant="ghost" aria-label={`Forget ${c.target_alias}`} onClick={() => void api(`/connections/${c.id}`, { method: "DELETE" }).then(() => qc.invalidateQueries({ queryKey: qk.connections }))}><Trash2 size={14} aria-hidden /></Button></div>

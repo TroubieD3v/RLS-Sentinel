@@ -9,6 +9,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   1 000 tables / 10 000 policies / 4 000 cases in `docs/benchmarks.md`.
 - README demo GIF and screenshot gallery recorded from a real run (`frontend/e2e/demo.spec.ts`, `scripts/make_gif.py`).
 
+### Changed
+- Interface redesign in the layout of a database client: toolbar with the active run, grouped sidebar with a
+  database navigator (schemas and tables with their RLS state), an editor tab for the open page and a status bar
+  with lab availability, PostgreSQL version and the confirmed violation count. Graphite dark theme and a soft light
+  theme, IBM Plex Sans and Mono bundled with the UI, compact panels and dense tables for findings and the overview.
+  The HTML report follows the same palette; screenshots and the demo GIF are regenerated.
+
 ### Fixed
 - Catalog listings stopped at 5 000 policies (and other fixed limits) while the run still looked complete. Limits are
   higher, and reaching one now adds a coverage note to the report.

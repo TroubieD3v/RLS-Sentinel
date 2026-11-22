@@ -17,7 +17,7 @@ const OVERSCAN = 3;
 const STATE_UI: Record<string, { glyph: ReactElement; text: string; cls: string }> = {
   ALLOW_VERIFIED: { glyph: <Check size={13} aria-hidden />, text: "ALLOW", cls: "tone-teal" },
   DENY_VERIFIED: { glyph: <Ban size={13} aria-hidden />, text: "DENY", cls: "tone-violet" },
-  FAIL: { glyph: <X size={13} aria-hidden />, text: "FAIL", cls: "tone-coral font-bold" },
+  FAIL: { glyph: <X size={13} aria-hidden />, text: "FAIL", cls: "tone-coral font-semibold" },
   UNKNOWN: { glyph: <CircleHelp size={13} aria-hidden />, text: "UNKNOWN", cls: "tone-amber" },
   EXPECTED_ALLOW: { glyph: <Check size={13} aria-hidden />, text: "expect allow", cls: "tone-muted" },
   EXPECTED_DENY: { glyph: <Ban size={13} aria-hidden />, text: "expect deny", cls: "tone-muted" },
@@ -99,7 +99,7 @@ export default function MatrixPage() {
   const totalCells = Object.values(m.totals).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Executable authorization matrix" title="Authorization matrix"
         subtitle={<>Rows are identities, columns are operations on resources. Every cell comes from an executed test (<b>{totalCells}</b> of <b>{m.denominator}</b> expected assertions). Select a cell for evidence.</>}
         actions={<Button size="sm" onClick={() => void download(`/reports/${run.id}?format=csv`, `matrix-${run.id}.csv`).catch((e: Error) => toast("coral", e.message))}><Download size={14} aria-hidden /> Export CSV</Button>} />
@@ -116,7 +116,7 @@ export default function MatrixPage() {
             <Input aria-label="Search columns" placeholder="e.g. SELECT alpha_invoice" value={q} onChange={(e) => setQ(e.target.value)} /></label>
           <div className="ml-auto"><Legend totals={m.totals} /></div>
         </div>
-        <div className="grid 2xl:grid-cols-[1fr_440px] gap-4 items-start">
+        <div className="grid 2xl:grid-cols-[1fr_440px] gap-3 items-start">
           <div ref={box} onScroll={onScroll} className="overflow-auto scroll-thin card-flat max-h-[62vh]" data-testid="matrix-scroll" onKeyDown={onKey}>
             <table role="grid" aria-label="Authorization matrix" aria-rowcount={rows.length + 1} aria-colcount={cols.length + 1} className="border-collapse text-xs" data-testid="matrix">
               <thead>
@@ -125,7 +125,7 @@ export default function MatrixPage() {
                   {c0 > 0 && <th aria-hidden style={{ width: c0 * COL_W, minWidth: c0 * COL_W }} className="sticky top-0 z-20 bg-raised border-b border-line" />}
                   {cols.slice(c0, c1).map((c) => (
                     <th key={c.key} scope="col" style={{ width: COL_W, minWidth: COL_W, maxWidth: COL_W }} className="sticky top-0 z-20 bg-raised border-b border-r border-line px-2 text-left align-bottom pb-1">
-                      <div className="mono font-bold truncate" title={c.key}>{c.operation}</div>
+                      <div className="mono font-semibold truncate" title={c.key}>{c.operation}</div>
                       <div className="mono text-muted truncate" title={c.via ?? c.resource ?? c.table ?? ""}>{c.via ?? c.resource ?? c.table}</div>
                       {c.tenant && <div className="text-muted truncate">tenant {c.tenant}</div>}
                     </th>
@@ -140,7 +140,7 @@ export default function MatrixPage() {
                   return (
                     <tr role="row" key={row.actor} style={{ height: ROW_H }}>
                       <th scope="row" className="sticky left-0 z-10 bg-raised border-b border-r border-line text-left px-3">
-                        <div className="font-bold truncate">{row.actor}</div>
+                        <div className="font-semibold truncate">{row.actor}</div>
                         <div className="mono text-muted truncate">{row.db_role}{row.tenant ? ` · ${row.tenant}` : ""}</div>
                       </th>
                       {c0 > 0 && <td aria-hidden style={{ width: c0 * COL_W }} />}
@@ -163,7 +163,7 @@ export default function MatrixPage() {
                                 aria-label={`${row.actor} ${c.operation} ${c.resource ?? c.table}: expected ${cell.expected}, ${cell.state === "UNKNOWN" ? "unknown" : `status ${cell.status}`}, observed ${cell.observed ?? "none"}`}
                               >
                                 <span className="inline-flex items-center gap-1 font-semibold">{ui.glyph}{ui.text}{cells.length > 1 ? ` +${cells.length - 1}` : ""}</span>
-                                <span className="mono text-[10px] text-muted truncate max-w-full">{cell.observed ?? ""}{cell.gate && cell.gate !== "UNKNOWN" && cell.gate !== "NONE" ? ` · ${cell.gate}` : ""}</span>
+                                <span className="mono text-[11px] text-muted truncate max-w-full">{cell.observed ?? ""}{cell.gate && cell.gate !== "UNKNOWN" && cell.gate !== "NONE" ? ` · ${cell.gate}` : ""}</span>
                               </button>
                             ) : <span className="text-muted px-2" aria-label="no case">·</span>}
                           </td>

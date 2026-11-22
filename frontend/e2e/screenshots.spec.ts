@@ -5,11 +5,13 @@ import { expect, test } from "@playwright/test";
 // Regenerates docs/assets/*.png from a real run of the bundled fixture. Skipped unless SCREENSHOTS=1.
 const out = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/assets");
 test.skip(!process.env.SCREENSHOTS, "set SCREENSHOTS=1 to regenerate documentation screenshots");
-test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+test.use({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: "dark" });
 
 test("documentation screenshots from real data", async ({ page }) => {
   test.setTimeout(240_000);
   await page.goto("/");
+  await expect(page.getByTestId("welcome")).toBeVisible();
+  await expect(page.getByTestId("fixture-select")).not.toHaveValue("");
   await page.screenshot({ path: path.join(out, "welcome-dark.png") });
 
   await page.goto("/studio");

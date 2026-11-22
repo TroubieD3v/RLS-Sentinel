@@ -47,7 +47,7 @@ export default function GraphPage() {
   const sg = g.data;
   const edgesOf = (id: string) => (sg?.edges ?? []).filter((e) => e.source === id || e.target === id);
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Database access graph" title="Access graph"
         subtitle="Who can reach which resource, and through which membership, grant, policy, view or function. Every edge carries its provenance; effective SQL permission is separate from the row-policy outcome." />
       <Card>
@@ -68,14 +68,14 @@ export default function GraphPage() {
         </div>
       )}
       {sg?.cycles && sg.cycles.length > 0 && <div role="alert" className="card-flat px-4 py-2 text-[13px] tone-amber">Role membership cycle detected: {sg.cycles[0].join(" → ")}</div>}
-      <div className="grid xl:grid-cols-[1fr_400px] gap-4 items-start">
+      <div className="grid xl:grid-cols-[1fr_400px] gap-3 items-start">
         <Card padded>
           {g.isLoading || !sg ? <Skeleton className="h-[560px]" /> : tableView ? (
             <div tabIndex={0} role="region" aria-label="Graph edges table" className="overflow-auto scroll-thin max-h-[620px]" data-testid="graph-table">
               <table className="w-full text-xs"><caption className="sr-only">Graph edges</caption>
                 <thead><tr className="text-left text-muted"><th className="p-1.5">From</th><th className="p-1.5">Edge</th><th className="p-1.5">To</th><th className="p-1.5">Evidence</th><th className="p-1.5">Why</th></tr></thead>
                 <tbody>{sg.edges.map((e) => (
-                  <tr key={e.id} className="border-t border-line align-top"><td className="p-1.5 mono">{e.source}</td><td className="p-1.5 mono font-bold">{e.type}{e.label ? ` (${e.label})` : ""}</td><td className="p-1.5 mono">{e.target}</td>
+                  <tr key={e.id} className="border-t border-line align-top"><td className="p-1.5 mono">{e.source}</td><td className="p-1.5 mono font-semibold">{e.type}{e.label ? ` (${e.label})` : ""}</td><td className="p-1.5 mono">{e.target}</td>
                     <td className="p-1.5"><ProvenanceLozenge kind={evKind(e.evidence_type)} /> {e.style === "violation" ? "✕ confirmed" : e.style === "verified" ? "✓ verified" : e.style === "static" ? "~ inferred" : ""}</td><td className="p-1.5">{e.explanation}</td></tr>))}</tbody></table>
             </div>
           ) : <>
@@ -87,7 +87,7 @@ export default function GraphPage() {
           {selEdge ? (
             <div className="grid gap-2 text-[13px]" data-testid="edge-inspector">
               <div className="flex gap-2 flex-wrap"><ProvenanceLozenge kind={evKind(selEdge.evidence_type)} /><Lozenge tone="muted">{selEdge.confidence}</Lozenge></div>
-              <div className="mono font-bold break-all">{selEdge.type}</div><div className="mono text-xs break-all">{selEdge.source} → {selEdge.target}</div>
+              <div className="mono font-semibold break-all">{selEdge.type}</div><div className="mono text-xs break-all">{selEdge.source} → {selEdge.target}</div>
               <p>{selEdge.explanation}</p>
               {selEdge.required_conditions.length > 0 && <ul className="list-disc pl-4 text-xs text-muted">{selEdge.required_conditions.map((c) => <li key={c}>{c}</li>)}</ul>}
               <p className="text-xs text-muted mono">source: {selEdge.source_ref ?? "—"}</p>
@@ -97,17 +97,17 @@ export default function GraphPage() {
               <div className="flex gap-2 flex-wrap items-center"><Lozenge tone="violet">{node.type}</Lozenge><b className="mono break-all">{node.label}</b></div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">{Object.entries(node.props).filter(([, v]) => v !== null && v !== undefined && typeof v !== "object").slice(0, 12).map(([k, v]) => (<><dt key={`${k}d`} className="text-muted">{k}</dt><dd key={`${k}v`} className="mono break-all">{String(v)}</dd></>))}</dl>
               <p className="text-xs text-muted mono">catalog source: {node.source ?? "—"}</p>
-              <div className="text-xs font-bold uppercase tracking-wide text-muted mt-1">Relations ({edgesOf(node.id).length})</div>
+              <div className="section-label mt-1">Relations ({edgesOf(node.id).length})</div>
               <ul className="grid gap-1 max-h-48 overflow-auto scroll-thin">{edgesOf(node.id).map((e) => <li key={e.id}><button type="button" className="text-left text-xs hover:underline mono" onClick={() => setSelEdge(e)}>{e.style === "violation" ? "✕" : e.style === "verified" ? "✓" : e.style === "static" ? "~" : "·"} {e.type} {e.source === node.id ? "→ " + e.target : "← " + e.source}</button></li>)}</ul>
             </div>
           ) : <p className="text-[13px] text-muted">Select a node or an edge. Unrelated nodes dim so the selected access path stands out.</p>}
           {roleForPaths && (
             <div className="mt-4 grid gap-2" data-testid="access-paths">
-              <div className="text-xs font-bold uppercase tracking-wide text-muted">Access paths for <span className="mono">{roleForPaths}</span></div>
+              <div className="section-label">Access paths for <span className="mono">{roleForPaths}</span></div>
               {paths.isLoading && <Skeleton className="h-16" />}
               {paths.data?.length === 0 && <p className="text-xs text-muted">No reachable tables via SQL privileges.</p>}
               <ul tabIndex={0} aria-label="Access paths" className="grid gap-1.5 max-h-72 overflow-auto scroll-thin">{(paths.data ?? []).map((p) => (
-                <li key={p.table} className="card-flat p-2 text-xs"><div className="mono font-bold">{p.table}</div>
+                <li key={p.table} className="card-flat p-2 text-xs"><div className="mono font-semibold">{p.table}</div>
                   <div className="text-muted">{Object.entries(p.privileges).map(([k, v]) => `${k}${v.some((x) => x.via_membership) ? " (via membership)" : ""}`).join(", ") || (p.owner_path ? "owner" : "")}</div>
                   <div className={p.bypass ? "tone-coral font-semibold" : ""}>{p.outcome}</div></li>))}</ul>
             </div>

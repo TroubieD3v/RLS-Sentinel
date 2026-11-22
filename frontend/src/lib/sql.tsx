@@ -46,7 +46,7 @@ export function SqlBlock({ text, marks, label }: { text: string; marks?: Record<
               <tr key={i} className={mk === "add" ? "diff-add" : mk === "del" ? "diff-del" : undefined}>
                 <td className="select-none text-right text-muted pl-3 pr-2 w-10 align-top">{i + 1}</td>
                 <td className="select-none w-5 text-center align-top" aria-label={mk === "add" ? "added line" : mk === "del" ? "removed line" : undefined}>
-                  {mk === "add" ? <span className="tone-teal font-bold">+</span> : mk === "del" ? <span className="tone-coral font-bold">−</span> : ""}
+                  {mk === "add" ? <span className="tone-teal font-semibold">+</span> : mk === "del" ? <span className="tone-coral font-semibold">−</span> : ""}
                 </td>
                 <td className="pr-3 whitespace-pre-wrap break-words">{highlightSql(ln)}</td>
               </tr>

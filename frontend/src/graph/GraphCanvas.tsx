@@ -60,21 +60,21 @@ const SentinelNode = memo(function SentinelNode({ data }: NodeProps<Node<Sentine
   if (g.type === "Policy") badges.push({ t: String(p.permissive ? "PERMISSIVE" : "RESTRICTIVE"), tone: p.permissive ? "tone-violet" : "tone-blue" }, { t: String(p.command), tone: "tone-muted" });
   if (g.type === "Finding") badges.push({ t: String(p.severity), tone: p.evidence_class === "CONFIRMED_VIOLATION" ? "tone-coral" : "tone-amber" });
   if (g.type === "TestCase") badges.push({ t: String(p.status), tone: p.status === "FAIL" ? "tone-coral" : p.status === "PASS" ? "tone-teal" : "tone-amber" });
-  const shape = g.type === "Role" || g.type === "FixtureIdentity" ? "rounded-full" : g.type === "Policy" ? "rounded-md" : g.type === "Finding" ? "rounded-sm" : "rounded-xl";
+  const shape = g.type === "Finding" ? "rounded-[1px] border-l-2 !border-l-[var(--coral)]" : "rounded-[3px]";
   return (
     <div
-      className={clsx("t-fast border bg-surface px-2.5 py-1.5 w-[236px] shadow", shape, dim && "opacity-25", selected ? "border-sky ring-2 ring-[var(--blue)]" : "border-line")}
+      className={clsx("t-fast border bg-surface px-2 py-1 w-[236px]", shape, dim && "opacity-25", selected ? "!bg-sel border-sky" : "border-line")}
       data-testid={`gnode-${g.id}`}
     >
       <Handle type="target" position={Position.Left} className="!w-1.5 !h-1.5 !bg-[var(--muted)] !border-0" />
       <div className="flex items-center gap-2 min-w-0">
         <Icon size={14} className="shrink-0 text-muted" aria-hidden />
-        <span className="font-semibold text-[12px] truncate" title={g.label}>{g.label}</span>
-        <span className="ml-auto text-[9px] uppercase tracking-wider text-muted shrink-0">{g.type === "FixtureIdentity" ? "actor" : g.type}</span>
+        <span className="font-medium text-[12px] truncate" title={g.label}>{g.label}</span>
+        <span className="ml-auto text-[10.5px] text-muted shrink-0">{g.type === "FixtureIdentity" ? "actor" : g.type}</span>
       </div>
       {badges.length > 0 && (
         <div className="flex gap-1 mt-1 flex-wrap">
-          {badges.map((b) => <span key={b.t} className={clsx("text-[9px] font-bold tracking-wide border rounded px-1", b.tone)} style={{ borderColor: "currentColor" }}>{b.t}</span>)}
+          {badges.map((b) => <span key={b.t} className={clsx("text-[10px] font-medium border rounded-[2px] px-1 leading-[15px]", b.tone)} style={{ borderColor: "color-mix(in srgb, currentColor 40%, transparent)" }}>{b.t}</span>)}
         </div>
       )}
       <Handle type="source" position={Position.Right} className="!w-1.5 !h-1.5 !bg-[var(--muted)] !border-0" />
@@ -117,7 +117,7 @@ export function GraphCanvas({ data, selectedId, onSelectNode, onSelectEdge, comp
       id: e.id, source: e.source, target: e.target, type: "default",
       label: compact ? undefined : `${st.prefix}${e.label || e.type.replaceAll("_", " ").toLowerCase()}`,
       style: { stroke: st.stroke, strokeWidth: st.width, strokeDasharray: st.dash, opacity: dim ? 0.12 : 1 },
-      labelStyle: { fontSize: 10, fill: "var(--text)" }, labelBgPadding: [4, 2], labelBgBorderRadius: 4,
+      labelStyle: { fontSize: 10, fill: "var(--text)" }, labelBgPadding: [4, 2], labelBgBorderRadius: 2,
       markerEnd: { type: MarkerType.ArrowClosed, color: st.stroke, width: 14, height: 14 },
       animated: false, data: { edge: e } as Record<string, unknown>, ariaLabel: `${e.type} from ${e.source} to ${e.target}: ${e.explanation}`,
     } satisfies Edge;
@@ -133,9 +133,9 @@ export function GraphCanvas({ data, selectedId, onSelectNode, onSelectEdge, comp
         onEdgeClick={(_, e) => onSelectEdge?.((e.data as { edge: GEdge }).edge)}
         onPaneClick={() => onSelectNode?.(null)}
       >
-        <Background gap={24} size={1} color="var(--border)" />
+        <Background gap={20} size={1} color="var(--grid-dot)" />
         {!compact && <Controls showInteractive={false} aria-label="Graph zoom controls" />}
-        {!compact && <MiniMap pannable zoomable ariaLabel="Graph minimap" nodeColor={() => "var(--muted)"} maskColor="rgba(0,0,0,.35)" />}
+        {!compact && <MiniMap pannable zoomable ariaLabel="Graph minimap" nodeColor={() => "var(--muted)"} maskColor="color-mix(in srgb, var(--bg) 60%, transparent)" />}
       </ReactFlow>
     </div>
   );
@@ -147,7 +147,7 @@ export function GraphLegend() {
     { style: "violation", text: "Runtime-confirmed violation" }, { style: "verified", text: "Expected & verified permitted" },
   ];
   return (
-    <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted" aria-label="Edge legend">
+    <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-muted" aria-label="Edge legend">
       {items.map(({ style, text }) => {
         const s = EDGE_STYLE[style];
         return (
