@@ -37,7 +37,7 @@ function Paired({ cases }: { cases: CaseRow[] }) {
   const cross = forRes.filter((c) => c.expected !== "ALLOW");
   const col = (title: string, tone: string, list: CaseRow[]) => (
     <div className="card-flat p-3 grid gap-2 content-start">
-      <h4 className={`text-xs font-bold uppercase tracking-wide ${tone}`}>{title}</h4>
+      <h4 className={`text-xs font-semibold ${tone}`}>{title}</h4>
       {list.length === 0 && <p className="text-xs text-muted">No case.</p>}
       {list.map((c) => (
         <div key={c.case_id} className="text-[12px] border-t border-line pt-2 first:border-0 first:pt-0">
@@ -96,10 +96,10 @@ export default function TestStudio() {
   };
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Expected policy → executable tests" title="Test Studio"
         subtitle="The spec states what SHOULD be allowed or denied, independently of the database. The harness executes it as genuinely different roles in a disposable PostgreSQL and compares." />
-      <div className="grid xl:grid-cols-[1.25fr_1fr] gap-4 items-start">
+      <div className="grid xl:grid-cols-[1.25fr_1fr] gap-3 items-start">
         <Card title="Expected-policy specification" subtitle="YAML or JSON; validated with Pydantic; raw SQL is rejected" id="editor"
           actions={<Lozenge tone="violet" icon={<FileCode2 size={12} aria-hidden />}>{filename}</Lozenge>}>
           <div className="grid gap-3">
@@ -114,7 +114,7 @@ export default function TestStudio() {
                 <div className="flex gap-2 items-center">{val.valid ? <Lozenge tone="teal">Valid</Lozenge> : <Lozenge tone="coral">Invalid</Lozenge>}
                   {val.counts && <span className="text-xs text-muted mono">{val.counts.actors} actors · {val.counts.resources} resources · {val.counts.expectations} expectations · {val.counts.privileges} privilege checks</span>}</div>
                 {val.checksum && <p className="mono text-xs text-muted break-all">{val.checksum}</p>}
-                <ul className="grid gap-1 text-[12px]">{val.issues.map((i, k) => <li key={k}><span className={i.level === "error" ? "tone-coral font-bold" : "tone-amber font-bold"}>{i.level}</span> <span className="mono">{i.path}</span> {i.message}</li>)}</ul>
+                <ul className="grid gap-1 text-[12px]">{val.issues.map((i, k) => <li key={k}><span className={i.level === "error" ? "tone-coral font-semibold" : "tone-amber font-semibold"}>{i.level}</span> <span className="mono">{i.path}</span> {i.message}</li>)}</ul>
               </div>
             )}
             <RunButton busy={busy} disabled={!fx.fixture || !text} onClick={() => void job.start({ fixture: fx.fixture, variant: fx.variant, spec: text, filename })} />
@@ -127,19 +127,19 @@ export default function TestStudio() {
             )}
           </div>
         </Card>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           <Card title="Form view" subtitle="Structured equivalent of the validated spec" id="form-view">
             {!n ? <p className="text-[13px] text-muted">Run the dry-run validation to see the form view of this spec.</p> : (
               <div className="grid gap-3 text-[12px]">
-                <div><h4 className="font-bold text-xs uppercase tracking-wide text-muted mb-1">Actors</h4>
+                <div><h4 className="font-semibold text-[11.5px] text-muted mb-1">Actors</h4>
                   <ul className="grid gap-1">{n.actors.map((a) => <li key={a.id} className="mono card-flat px-2 py-1">{a.id} → {a.pg_role} {a.tenant ? `· tenant ${a.tenant}` : ""} · {a.kind}</li>)}</ul></div>
-                <div><h4 className="font-bold text-xs uppercase tracking-wide text-muted mb-1">Resources</h4>
+                <div><h4 className="font-semibold text-[11.5px] text-muted mb-1">Resources</h4>
                   <ul className="grid gap-1">{n.resources.map((r) => <li key={r.id} className="mono card-flat px-2 py-1">{r.id} · {r.table}</li>)}</ul></div>
-                <div><h4 className="font-bold text-xs uppercase tracking-wide text-muted mb-1">Expectations ({n.expectations.length})</h4>
+                <div><h4 className="font-semibold text-[11.5px] text-muted mb-1">Expectations ({n.expectations.length})</h4>
                   <div tabIndex={0} role="region" aria-label="Generated expectations" className="max-h-52 overflow-auto scroll-thin card-flat"><table className="w-full"><tbody>{n.expectations.map((e) => (
-                    <tr key={e.id} className="border-t border-line first:border-0"><td className="p-1.5 mono">{e.id}</td><td className="p-1.5">{e.actor}</td><td className="p-1.5">{e.operation}</td><td className="p-1.5 font-bold">{e.expected}</td></tr>))}</tbody></table></div></div>
+                    <tr key={e.id} className="border-t border-line first:border-0"><td className="p-1.5 mono">{e.id}</td><td className="p-1.5">{e.actor}</td><td className="p-1.5">{e.operation}</td><td className="p-1.5 font-semibold">{e.expected}</td></tr>))}</tbody></table></div></div>
                 <form className="card-flat p-3 grid gap-2" onSubmit={(e) => { e.preventDefault(); addExpectation(); }} aria-label="Add expectation">
-                  <h4 className="font-bold text-xs uppercase tracking-wide text-muted">Add expectation</h4>
+                  <h4 className="font-semibold text-[11.5px] text-muted">Add expectation</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <Field label="Id" htmlFor="f-id"><Input id="f-id" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} placeholder="bob-cannot-read-x" pattern="[A-Za-z0-9_.:\-]+" /></Field>
                     <Field label="Actor" htmlFor="f-actor"><Select id="f-actor" value={form.actor} onChange={(e) => setForm({ ...form, actor: e.target.value })}><option value="" />{n.actors.map((a) => <option key={a.id}>{a.id}</option>)}</Select></Field>

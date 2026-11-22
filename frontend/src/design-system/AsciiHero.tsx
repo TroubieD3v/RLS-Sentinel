@@ -21,8 +21,8 @@ const COMPACT = `
 export function AsciiHero() {
   return (
     <figure className="m-0">
-      <pre aria-hidden="true" className="hidden sm:block mono leading-[1.25] text-violet m-0 overflow-x-auto scroll-thin select-none">{WIDE}</pre>
-      <pre aria-hidden="true" className="sm:hidden mono leading-[1.25] text-violet m-0 overflow-x-auto select-none">{COMPACT}</pre>
+      <pre aria-hidden="true" className="hidden sm:block ascii leading-[1.25] text-muted m-0 overflow-x-auto scroll-thin select-none">{WIDE}</pre>
+      <pre aria-hidden="true" className="sm:hidden ascii leading-[1.25] text-muted m-0 overflow-x-auto select-none">{COMPACT}</pre>
       <figcaption className="sr-only">
         Illustration: a role for tenant A is granted SELECT on the invoices table and a policy limits it to tenant A rows, while a role for tenant B is verified to be denied.
         This is decorative example text, not scan output.

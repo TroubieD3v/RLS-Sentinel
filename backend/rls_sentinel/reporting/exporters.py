@@ -97,26 +97,28 @@ _STATE_CLASS = {"ALLOW_VERIFIED": "ok", "DENY_VERIFIED": "ok2", "FAIL": "bad", "
 _STATE_GLYPH = {"ALLOW_VERIFIED": "✓ ALLOW", "DENY_VERIFIED": "⊘ DENY", "FAIL": "✕ FAIL", "UNKNOWN": "? UNKNOWN", "EXPECTED_ALLOW": "○ allow", "EXPECTED_DENY": "○ deny"}
 
 _CSS = """
-:root{--bg:#080d15;--surface:#0f1826;--raised:#142033;--border:#29374c;--text:#e8eef7;--muted:#9baac0;--teal:#43ddc6;--violet:#af9bff;--amber:#f4be61;--coral:#fb7288;--blue:#7ab6ff}
-@media (prefers-color-scheme:light){:root{--bg:#f6f8fc;--surface:#fff;--raised:#f0f4fa;--border:#d9e1ed;--text:#182437;--muted:#4f6076;--teal:#0b6b5e;--violet:#5a3fd0;--amber:#8a5a00;--coral:#b3203a;--blue:#1d5fb4}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,Geist,system-ui,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:32px 20px 64px}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:32px 0 12px;border-bottom:1px solid var(--border);padding-bottom:6px}
-code,pre,.mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:12.5px}.muted{color:var(--muted)}
-.brand{display:flex;align-items:center;gap:10px;letter-spacing:.14em;font-weight:700;font-size:13px}.tag{color:var(--muted);letter-spacing:.12em;font-size:11px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin:12px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.stat b{display:block;font-size:26px}
-pre{background:var(--raised);border:1px solid var(--border);border-radius:8px;padding:12px;overflow:auto;white-space:pre-wrap}
-table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--raised)}
-.lozenge{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700;border:1px solid currentColor;letter-spacing:.04em}
-.CONFIRMED_VIOLATION{color:var(--coral)}.CONFIGURATION_RISK{color:var(--amber)}.INCONCLUSIVE{color:var(--blue)}.ok{color:var(--teal)}.ok2{color:var(--violet)}.bad{color:var(--coral);font-weight:700}.unk{color:var(--amber)}.exp{color:var(--muted)}
-.banner{border:1px solid var(--amber);border-radius:8px;padding:8px 12px;color:var(--amber);margin:12px 0;font-weight:600}
+:root{--bg:#191b1e;--surface:#1f2226;--raised:#24272c;--border:#2f333a;--line:#25282d;--text:#d5d7da;--muted:#8d939a;--teal:#94b08e;--violet:#aaa4ca;--amber:#d0a866;--coral:#d98577;--blue:#8fb4d8}
+@media (prefers-color-scheme:light){:root{--bg:#eef0f2;--surface:#f8f9fa;--raised:#e2e5e8;--border:#cdd3d9;--line:#dde1e5;--text:#1e2227;--muted:#5b626a;--teal:#3b6a4a;--violet:#5a4f8c;--amber:#87601a;--coral:#a8402f;--blue:#2c5d8a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 'IBM Plex Sans',system-ui,'Segoe UI',sans-serif;font-feature-settings:"tnum"}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 56px}h1{font-size:19px;font-weight:600;margin:0 0 4px}h2{font-size:14px;font-weight:600;margin:28px 0 10px;border-bottom:1px solid var(--border);padding-bottom:5px}
+code,pre,.mono{font-family:'IBM Plex Mono',ui-monospace,Consolas,monospace;font-size:12px}.muted{color:var(--muted)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}.tag{color:var(--muted);font-size:11.5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.grid>.card{margin:0;border:0;border-radius:0}.stat b{display:block;font:500 20px 'IBM Plex Mono',ui-monospace,Consolas,monospace}
+pre{background:var(--raised);border:1px solid var(--border);border-radius:3px;padding:8px 10px;overflow:auto;white-space:pre-wrap}
+table{border-collapse:collapse;width:100%;background:var(--surface);border:1px solid var(--border)}th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+th{background:var(--raised);color:var(--muted);font-weight:500;border-bottom-color:var(--border)}
+.lozenge{display:inline-block;border-radius:3px;padding:0 6px;line-height:18px;font-size:11.5px;font-weight:500;border:1px solid currentColor}
+.CONFIRMED_VIOLATION{color:var(--coral)}.CONFIGURATION_RISK{color:var(--amber)}.INCONCLUSIVE{color:var(--blue)}.ok{color:var(--teal)}.ok2{color:var(--violet)}.bad{color:var(--coral);font-weight:600}.unk{color:var(--amber)}.exp{color:var(--muted)}
+.banner{border:1px solid var(--amber);border-left-width:2px;border-radius:3px;padding:6px 10px;color:var(--amber);margin:10px 0;font-weight:500}
 @media print{body{background:#fff;color:#000}}
 """
 
 _LOGO = ('<svg width="28" height="28" viewBox="0 0 32 32" role="img" aria-label="RLS Sentinel mark" xmlns="http://www.w3.org/2000/svg">'
          '<ellipse cx="16" cy="7" rx="10" ry="4" fill="none" stroke="currentColor" stroke-width="2"/>'
          '<path d="M6 7v18c0 2.2 4.5 4 10 4s10-1.8 10-4V7" fill="none" stroke="currentColor" stroke-width="2"/>'
-         '<circle cx="16" cy="17" r="4.2" fill="none" stroke="#43ddc6" stroke-width="2"/><circle cx="16" cy="17" r="1.6" fill="#43ddc6"/></svg>')
+         '<path d="M11 18l3.5 3.5L21.5 14" fill="none" stroke="#8fb4d8" stroke-width="2.2"/></svg>')
 
 
 def _e(x: Any) -> str:

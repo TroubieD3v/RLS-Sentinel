@@ -21,7 +21,7 @@ const SettingsPage = lazy(() => import("@/pages/ReportsHistorySettings").then((m
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 4000, refetchOnWindowFocus: false } } });
 
 function NotFound() {
-  return <div className="card p-8 text-center"><h1 className="text-xl font-bold">Page not found</h1><p className="text-muted mt-1">Use the navigation to continue.</p></div>;
+  return <div className="card p-8 text-center"><h1 className="text-[16px] font-semibold">Page not found</h1><p className="text-muted mt-1">Use the navigation to continue.</p></div>;
 }
 
 export default function App() {

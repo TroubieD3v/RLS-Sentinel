@@ -12,16 +12,16 @@ function PolicyCard({ p, warnings, tests }: { p: PolicyRec; warnings: Finding[];
   return (
     <li className="card p-4 grid gap-2.5" data-testid={`policy-${p.name}`}>
       <div className="flex gap-2 items-center flex-wrap">
-        <h3 className="mono font-bold">{p.name}</h3>
+        <h3 className="mono font-semibold">{p.name}</h3>
         <Lozenge tone={p.permissive ? "violet" : "blue"}>{p.permissive ? "Permissive · OR" : "Restrictive · AND"}</Lozenge>
         <Lozenge tone="muted">{p.command}</Lozenge>
         <ProvenanceLozenge kind="catalog" />
       </div>
       <div className="flex gap-1.5 flex-wrap items-center text-xs"><span className="text-muted">Applies to roles:</span>
-        {p.roles.map((r) => <span key={r} className={`mono border rounded-full px-2 py-0.5 ${r === "PUBLIC" ? "tone-amber" : ""}`} style={{ borderColor: r === "PUBLIC" ? "currentColor" : "var(--border)" }}>{r}</span>)}</div>
+        {p.roles.map((r) => <span key={r} className={`mono border rounded-[3px] px-2 py-0.5 ${r === "PUBLIC" ? "tone-amber" : ""}`} style={{ borderColor: r === "PUBLIC" ? "currentColor" : "var(--border)" }}>{r}</span>)}</div>
       <div className="grid md:grid-cols-2 gap-3">
-        <div className="card-flat p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">USING (filters existing rows)</div><Sql text={p.using_expr} /></div>
-        <div className="card-flat p-3"><div className="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">WITH CHECK (validates new rows)</div><Sql text={p.check_expr} />
+        <div className="card-flat p-3"><div className="text-[11.5px] text-muted mb-1">USING (filters existing rows)</div><Sql text={p.using_expr} /></div>
+        <div className="card-flat p-3"><div className="text-[11.5px] text-muted mb-1">WITH CHECK (validates new rows)</div><Sql text={p.check_expr} />
           {p.check_expr == null && (p.command === "UPDATE" || p.command === "ALL") && p.using_expr && <p className="text-[11px] text-muted mt-1">Omitted: UPDATE falls back to USING for the new row.</p>}</div>
       </div>
       {(p.deps.columns.length > 0 || p.deps.relations.length > 0) && (
@@ -58,7 +58,7 @@ export default function PolicyExplorer() {
   const testsFor = (p: PolicyRec) => (cases.data ?? []).filter((c) => c.table === p.table && c.evidence.raw.applicable_policies.some((x) => x.name === p.name))
     .map((c) => ({ id: c.case_id, status: c.status }));
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Policy inspection" title="Policy explorer" subtitle="Per-command cards from pg_policy. Permissive policies combine with OR; restrictive with AND; a restrictive policy alone never grants access." />
       <Card>
         <div className="flex flex-wrap gap-3 items-end">
@@ -72,7 +72,7 @@ export default function PolicyExplorer() {
         const rec = data.tables.find((x) => `${x.schema}.${x.name}` === t);
         return (
           <section key={t} aria-label={`Policies on ${t}`} className="grid gap-3">
-            <h2 className="mono font-bold flex gap-2 items-center flex-wrap">{t}{rec && (rec.rls_enabled ? <Lozenge tone="teal">RLS on</Lozenge> : <Lozenge tone="amber">RLS off — policies inactive</Lozenge>)}{rec?.rls_forced && <Lozenge tone="violet">Force</Lozenge>}</h2>
+            <h2 className="mono font-semibold flex gap-2 items-center flex-wrap">{t}{rec && (rec.rls_enabled ? <Lozenge tone="teal">RLS on</Lozenge> : <Lozenge tone="amber">RLS off — policies inactive</Lozenge>)}{rec?.rls_forced && <Lozenge tone="violet">Force</Lozenge>}</h2>
             <ul className="grid gap-3 xl:grid-cols-2 list-none p-0 m-0">{ps.map((p) => <PolicyCard key={p.name} p={p} warnings={warnFor(p)} tests={testsFor(p)} />)}</ul>
           </section>
         );

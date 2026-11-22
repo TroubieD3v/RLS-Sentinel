@@ -33,7 +33,7 @@ function Results({ w, baselineRunId }: { w: WhatIf; baselineRunId: string }) {
   const bad = (r.summary.regression ?? 0) + (r.summary.broader_access ?? 0);
   const groups = Object.keys(KIND_LABEL).filter((k) => k !== "unchanged_passing");
   return (
-    <div className="grid gap-4" data-testid="whatif-results">
+    <div className="grid gap-3" data-testid="whatif-results">
       <div className="card p-4 grid gap-1" style={{ borderColor: r.verdict === "improves" ? "var(--teal)" : "var(--coral)" }} role="status">
         <div className="flex gap-2 items-center flex-wrap"><Lozenge tone={r.verdict === "improves" ? "teal" : r.verdict === "no_change" ? "muted" : "coral"}>{r.verdict.replace("_", " ")}</Lozenge>
           <b data-testid="whatif-verdict-text">{r.verdict_text}</b></div>
@@ -45,7 +45,7 @@ function Results({ w, baselineRunId }: { w: WhatIf; baselineRunId: string }) {
         <Stat label="Broader access" value={r.summary.broader_access ?? 0} tone={r.summary.broader_access ? "coral" : undefined} />
         <Stat label="Still failing" value={r.summary.unchanged_failing ?? 0} tone="amber" />
       </div>
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         {([["Baseline", r.baseline_coverage], ["After draft (sandbox)", r.sandbox_coverage]] as const).map(([t, c]) => (
           <Card key={t} title={t} subtitle={`${c.verified_coverage_pct}% verified of ${c.expected_assertions}`}>
             <CoverageBar passed={c.passed} failed={c.failed} inconclusive={c.inconclusive} notExecuted={c.not_executed} total={c.expected_assertions} /></Card>))}
@@ -56,7 +56,7 @@ function Results({ w, baselineRunId }: { w: WhatIf; baselineRunId: string }) {
           if (!rows.length) return null;
           return (
             <section key={k} className="mb-3" aria-label={KIND_LABEL[k].text}>
-              <h4 className={`text-xs font-bold uppercase tracking-wide ${KIND_LABEL[k].tone}`}>{KIND_LABEL[k].text} · {rows.length}</h4>
+              <h4 className={`text-xs font-semibold ${KIND_LABEL[k].tone}`}>{KIND_LABEL[k].text} · {rows.length}</h4>
               <ul className="grid gap-1 mt-1">{rows.map((d) => (
                 <li key={d.case_id} className="text-[12px] flex gap-2 flex-wrap card-flat px-2 py-1"><span className="mono font-semibold">{d.case_id}</span><span className="text-muted">{d.actor} {d.operation} expected {d.expected}</span>
                   <span className="mono ml-auto">{d.before} → {d.after}</span>{d.detail && <span className="basis-full text-muted">{d.detail}</span>}</li>))}</ul>
@@ -129,13 +129,13 @@ export default function WhatIfPage() {
     } catch (e) { toast("coral", describeError(e)); } finally { setBusy(false); }
   };
   return (
-    <div className="grid gap-4">
-      <div className="sticky top-0 z-10 -mt-2 card px-4 py-2.5 flex items-center gap-2 font-bold tracking-wide text-[13px]" style={{ borderColor: "var(--amber)", color: "var(--amber)" }} role="note" data-testid="sandbox-banner">
+    <div className="grid gap-3">
+      <div className="sticky top-0 z-10 -mt-2 card px-4 py-2.5 flex items-center gap-2 font-semibold text-[13px]" style={{ borderColor: "var(--amber)", color: "var(--amber)" }} role="note" data-testid="sandbox-banner">
         <ShieldAlert size={16} aria-hidden /> {BANNER}
       </div>
       <PageHeader kicker="Remediation simulation" title="What-if Policy Lab"
         subtitle="Edit a draft, replay the entire matrix in a disposable clone and see what improves, what breaks and what becomes broader. Nothing is ever sent to a source database." />
-      <div className="grid xl:grid-cols-2 gap-4 items-start">
+      <div className="grid xl:grid-cols-2 gap-3 items-start">
         <Card title="Original policies" subtitle={`Baseline run ${base?.fixture}:${base?.variant}`} id="orig"
           actions={<Select aria-label="Baseline run" value={base?.id ?? ""} onChange={(e) => { setBaseId(e.target.value); setWid(null); }} className="w-56 !h-8 text-xs">{labRuns.map((r) => <option key={r.id} value={r.id}>{r.fixture}:{r.variant} · {r.id.slice(0, 6)}</option>)}</Select>}>
           <div tabIndex={0} role="region" aria-label="Original policies list" className="max-h-[420px] overflow-auto scroll-thin grid gap-2">
@@ -154,7 +154,7 @@ export default function WhatIfPage() {
                 <FlaskConical size={14} aria-hidden /> Replay in sandbox</Button>
             </div>
             {lint && (lint.accepted ? <Lozenge tone="teal">Accepted by the sandbox allow-list</Lozenge> : <ul role="alert" className="text-[12px] tone-coral list-disc pl-4">{lint.problems.map((p) => <li key={p}>{p}</li>)}</ul>)}
-            {draft.trim() && <div><div className="text-xs font-bold uppercase tracking-wide text-muted mb-1">Change rail</div><SqlBlock text={marks.text} marks={marks.marks} label="Draft with change markers" /></div>}
+            {draft.trim() && <div><div className="section-label mb-1">Change rail</div><SqlBlock text={marks.text} marks={marks.marks} label="Draft with change markers" /></div>}
           </div>
         </Card>
       </div>

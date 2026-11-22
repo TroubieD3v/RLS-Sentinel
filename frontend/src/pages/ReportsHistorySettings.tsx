@@ -20,13 +20,13 @@ export function ReportsPage() {
   if (runs.error) return <ErrorState error={runs.error} />;
   const list = (runs.data ?? []).filter((r) => r.status === "completed");
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Evidence-centered reports" title="Reports" subtitle="Every export states scope, the independent expectation, observed result, provenance, reproducibility data, remediation caveats and limitations. No row contents, credentials or tokens are included." />
       {list.length === 0 ? <EmptyState title="No completed runs">Run a verification to generate a report archive.</EmptyState> : (
         <Card padded={false}>
           <div className="overflow-auto scroll-thin"><table className="w-full text-[13px]" data-testid="reports-table">
             <caption className="sr-only">Run archive</caption>
-            <thead><tr className="text-left text-muted text-xs uppercase tracking-wide"><th className="p-3">Run</th><th className="p-3">Started</th><th className="p-3">Result</th><th className="p-3">Export</th><th className="p-3" /></tr></thead>
+            <thead><tr className="text-left text-muted text-xs  "><th className="p-3">Run</th><th className="p-3">Started</th><th className="p-3">Result</th><th className="p-3">Export</th><th className="p-3" /></tr></thead>
             <tbody>{list.map((r) => (
               <tr key={r.id} className="border-t border-line">
                 <td className="p-3"><div className="font-semibold flex items-center gap-2">{r.fixture ?? "catalog scan"}{r.variant ? ` · ${r.variant}` : ""}{r.fixture && <DemoTag />}</div><div className="mono text-xs text-muted">{r.id.slice(0, 12)} · {r.environment_mode} · schema {shortHash(String(r.version_info?.schema_hash ?? ""))}</div></td>
@@ -58,7 +58,7 @@ export function HistoryPage() {
   if (hist.isLoading) return <Skeleton className="h-64" />;
   if (hist.error) return <ErrorState error={hist.error} />;
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Regressions & drift" title="History" subtitle="Real runs only. Compare two runs to see policy drift, new / resolved / persisting / unverified findings and test-outcome changes." />
       <Card title="Verified coverage and failures per run" id="trend">
         {series.length < 2 ? <p className="text-[13px] text-muted">Two or more completed lab runs are needed for a trend.</p> : (
@@ -78,9 +78,9 @@ export function HistoryPage() {
             <GitCompare size={14} aria-hidden /> Compare</Button>
         </div>
         {res && (
-          <div className="mt-4 grid gap-4" data-testid="diff-result">
+          <div className="mt-4 grid gap-3" data-testid="diff-result">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
-              {(["new", "resolved", "persisting", "unverified"] as const).map((k) => <div key={k} className="card-flat p-3"><div className="text-[11px] uppercase tracking-widest text-muted">{k}</div><div className="mono text-2xl font-bold">{res.finding_labels[k].length}</div></div>)}
+              {(["new", "resolved", "persisting", "unverified"] as const).map((k) => <div key={k} className="card-flat p-3"><div className="text-[11px] text-muted">{k}</div><div className="mono text-2xl font-semibold">{res.finding_labels[k].length}</div></div>)}
             </div>
             <div className="text-xs text-muted">{res.diff.summary.changes} structural changes · {res.diff.summary.risk_higher} higher-risk · {res.diff.summary.risk_lower} lower-risk · {res.diff.summary.textual_only} text-only · {res.diff.summary.regressions} regressions · {res.diff.summary.resolved} resolved cases</div>
             <ul tabIndex={0} aria-label="Catalog changes" className="grid gap-1 text-[12px] max-h-72 overflow-auto scroll-thin">{res.diff.changes.map((c, i) => <li key={i} className="flex gap-2"><Lozenge tone={c.risk === "higher" ? "coral" : c.risk === "lower" ? "teal" : "muted"}>{c.risk}</Lozenge><span className="mono text-muted">{c.category}</span><span>{c.summary}{c.textual_only ? " (text only)" : ""}</span></li>)}</ul>
@@ -90,9 +90,9 @@ export function HistoryPage() {
       </Card>
       <Card title="Run archive" padded={false} id="archive">
         <div className="overflow-auto scroll-thin"><table className="w-full text-[12px]"><caption className="sr-only">Run history</caption>
-          <thead><tr className="text-left text-muted uppercase tracking-wide"><th className="p-2.5">When</th><th className="p-2.5">Run</th><th className="p-2.5">Status</th><th className="p-2.5">Pass</th><th className="p-2.5">Fail</th><th className="p-2.5">Inconcl.</th><th className="p-2.5">Verified</th><th className="p-2.5">Findings</th></tr></thead>
+          <thead><tr className="text-left text-muted  "><th className="p-2.5">When</th><th className="p-2.5">Run</th><th className="p-2.5">Status</th><th className="p-2.5">Pass</th><th className="p-2.5">Fail</th><th className="p-2.5">Inconcl.</th><th className="p-2.5">Verified</th><th className="p-2.5">Findings</th></tr></thead>
           <tbody>{(hist.data ?? []).map((h) => <tr key={h.run_id} className="border-t border-line"><td className="p-2.5 text-muted">{fmtDate(h.started_at)}</td><td className="p-2.5 mono">{h.fixture ?? "scan"}{h.variant ? `:${h.variant}` : ""}</td><td className="p-2.5"><StatusLozenge status={h.status} /></td>
-            <td className="p-2.5 mono">{h.passed}</td><td className={`p-2.5 mono ${h.failed ? "tone-coral font-bold" : ""}`}>{h.failed}</td><td className="p-2.5 mono">{h.inconclusive}</td><td className="p-2.5 mono">{h.verified_coverage_pct}% / {h.expected}</td><td className="p-2.5 mono">{h.findings}</td></tr>)}</tbody></table></div>
+            <td className="p-2.5 mono">{h.passed}</td><td className={`p-2.5 mono ${h.failed ? "tone-coral font-semibold" : ""}`}>{h.failed}</td><td className="p-2.5 mono">{h.inconclusive}</td><td className="p-2.5 mono">{h.verified_coverage_pct}% / {h.expected}</td><td className="p-2.5 mono">{h.findings}</td></tr>)}</tbody></table></div>
       </Card>
     </div>
   );
@@ -108,9 +108,9 @@ export function SettingsPage() {
   const [tok, setTok] = useState("");
   const [days, setDays] = useState(90);
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <PageHeader kicker="Preferences & diagnostics" title="Settings" />
-      <div className="grid lg:grid-cols-2 gap-4 items-start">
+      <div className="grid lg:grid-cols-2 gap-3 items-start">
         <Card title="Appearance" id="appearance">
           <div className="grid gap-3 max-w-md">
             <Field label="Theme" htmlFor="theme"><Select id="theme" value={theme} onChange={(e) => setTheme(e.target.value as "system" | "dark" | "light")}><option value="system">Follow operating system</option><option value="dark">Dark — Midnight Observatory</option><option value="light">Light</option></Select></Field>
@@ -139,7 +139,7 @@ export function SettingsPage() {
       </div>
       <Card title="Suppressions" subtitle="Hide alerts without modifying results; each has an owner, reviewer and expiry" id="suppressions">
         {(sups.data?.length ?? 0) === 0 ? <p className="text-[13px] text-muted">None.</p> : (
-          <ul className="grid gap-1.5 text-[12px]">{sups.data!.map((s) => <li key={s.id} className="card-flat px-3 py-2 flex gap-3 flex-wrap items-center"><Lozenge tone={s.active ? "amber" : "muted"}>{s.active ? "active" : "inactive"}</Lozenge><span className="mono font-bold">{s.rule_id}</span><span className="mono">{s.scope}</span><span className="text-muted">{s.reason}</span>
+          <ul className="grid gap-1.5 text-[12px]">{sups.data!.map((s) => <li key={s.id} className="card-flat px-3 py-2 flex gap-3 flex-wrap items-center"><Lozenge tone={s.active ? "amber" : "muted"}>{s.active ? "active" : "inactive"}</Lozenge><span className="mono font-semibold">{s.rule_id}</span><span className="mono">{s.scope}</span><span className="text-muted">{s.reason}</span>
             <span className="text-muted ml-auto">owner {s.owner} · reviewer {s.reviewer} · expires {fmtDate(s.expires_at)}</span>{s.active && <Button size="sm" variant="ghost" onClick={() => void api(`/suppressions/${s.id}`, { method: "DELETE" }).then(() => qc.invalidateQueries({ queryKey: qk.suppressions }))}>Revoke</Button>}</li>)}</ul>)}
       </Card>
       <Card title="Audit log" subtitle="Append-only record of state-changing actions" id="audit" padded={false}>
